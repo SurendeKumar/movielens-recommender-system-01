@@ -96,10 +96,14 @@ This step will:
 ### 6. Start the FastAPI application
 ```bash
 uvicorn app:app --reload
+./startup.ps1 (Windows (PowerShell))
+./startup.sh (macOS/Linux - save .ps1 as .sh)
 ```
 
 ## API Endpoints
 
+- `GET /version` → API Version check
+- `GET /status` → API status check
 - `POST /query` → Ask natural language questions (*“Tell me about Inception”*)  
 - `GET /movies/{movie_id}` → Retrieve structured details about a movie  
 - `GET /recommendations` → Recommend movies with filters (genre, year, rating)  
