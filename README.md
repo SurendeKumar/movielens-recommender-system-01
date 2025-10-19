@@ -54,7 +54,7 @@ cd movielens-recommender-system-01
 - python -m venv .venv
 
 - Install with editable mode: pip install -e .
-- Install with editable mode and also extra dependencies under .dev inside tom file (mainly for testing)
+- Install with editable mode and also extra dependencies under .dev inside tom file (mainly for testing): pip install -e .[dev]
 
 ```
 
@@ -71,7 +71,8 @@ Activate it:
 
 ### 3. Install dependencies
 ```bash
-pip install -r requirements.txt
+pip install -e .
+pip install -e .[dev]
 ```
 
 ### 4. Download dataset
