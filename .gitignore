@@ -1,0 +1,6 @@
+.venv/
+data/
+movie_recommender_system/__pycache__/
+.__pycache__
+__pycache__/
+movie_recommender_system.egg-info/
