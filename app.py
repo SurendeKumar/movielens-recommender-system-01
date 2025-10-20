@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, HTTPException
+from movie_reccommender_system.db import db_select
 # initiate the load_dotenv
 load_dotenv()
 
@@ -12,6 +13,9 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+
+#  define sqlite db path 
+DB_PATH="./movie_reccommender_system/db/movies.db"
 
 # initiate the app 
 API_VERSION="1.0.0"
@@ -47,3 +51,9 @@ async def version():
     return {
         "version": API_VERSION, 
         "title": API_TITLE}
+
+# decorator to get the movielens db stats
+@app.get("/db/stats")
+def read_db_stats():
+    """GET endpoint to fetch database stats."""
+    return db_select.get_sqlite_movielens_stats(DB_PATH)

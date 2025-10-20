@@ -1,6 +1,14 @@
 .venv/
 data/
-movie_recommender_system/__pycache__/
+movie_reccommender_system/__pycache__/
 .__pycache__
 __pycache__/
-movie_recommender_system.egg-info/
+movie_reccommender_system.egg-info/
+# raw datasets and archives
+movie_reccommender_system/data_ingestor/data_raw/
+*.zip
+*.tar
+*.tar.gz
+
+# SQLite dbs
+*.db
