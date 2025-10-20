@@ -57,7 +57,7 @@ def insert_movies_and_ratings_into_sqlite(
         # create fresh tables so schema is always correct
         logger.info("Creating tables 'movies' and 'ratings'...")
         # make both tables from scratch
-        create_tables(db) 
+        create_movies_ratings_tbl(db) 
 
         # prepare SQL for inserting into the movies table
         movies_sql = """
@@ -98,7 +98,7 @@ def insert_movies_and_ratings_into_sqlite(
             for row in ratings_df.itertuples(index=False, name=None) )
 
         # insert the ratings in chunks
-        logger.info("Inserting ratings in chunks of %d rows...", chunk_size)
+        logger.info(f"Inserting ratings in chunks of rows: {chunk_size}")
         # keep a running count
         total_rating_rows = 0        
         # get next batch                   
@@ -109,13 +109,13 @@ def insert_movies_and_ratings_into_sqlite(
             total_rating_rows += len(chunk)             
 
         # create helpful indexes for faster queries later
-        logger.info("Creating indexes for faster lookups...") 
+        logger.info(f"Creating indexes for faster lookups...") 
         # find by title fast 
-        db.execute("CREATE INDEX IF NOT EXISTS idx_movies_title ON movies(title);")   
+        db.execute(f"CREATE INDEX IF NOT EXISTS idx_movies_title ON movies(title);")   
         # find movie ratings fast   
-        db.execute("CREATE INDEX IF NOT EXISTS idx_ratings_movie ON ratings(movie_id);") 
+        db.execute(f"CREATE INDEX IF NOT EXISTS idx_ratings_movie ON ratings(movie_id);") 
         # find user ratings fast
-        db.execute("CREATE INDEX IF NOT EXISTS idx_ratings_user  ON ratings(user_id);")  
+        db.execute(f"CREATE INDEX IF NOT EXISTS idx_ratings_user  ON ratings(user_id);")  
 
         # verify row counts with a simple SELECT (defensive check)
          # how many movies now in DB
@@ -124,7 +124,7 @@ def insert_movies_and_ratings_into_sqlite(
         rating_count = db.execute("SELECT COUNT(*) FROM ratings;").fetchone()[0] 
 
         # log final counts so we can see what happened
-        logger.info("Inserted %d movies and %d ratings.", movie_count, rating_count) 
+        logger.info(f"Inserted movies: {movie_count} and ratings: {rating_count}") 
 
         # return counts so tests can assert exact numbers
         return {
@@ -187,7 +187,7 @@ def change_none_if_nan(value):
 
 
 # create the tables into sqlite
-def create_tables(db_connection: sqlite3.Connection):
+def create_movies_ratings_tbl(db_connection: sqlite3.Connection):
     """Function to create the 'movies' and 'ratings' tables with a fixed schema.
 
     Args
@@ -238,6 +238,184 @@ def create_tables(db_connection: sqlite3.Connection):
 
 
 
+
+# creating the genre table
+def create_genres_tbl(db_file_path: str) -> Dict:
+    """Function to create and fill the 'genres' and 'movie_genres' tables.
+
+    Args:
+        db_file_path (str): Path to the SQLite database file that already has a 'movies' table.
+
+    Returns:
+        Dict: Containing the success message and logs.
+    """
+    # list of genre column names as they appear in u.item
+    genre_names= [
+        "unknown", "Action", "Adventure", "Animation", "Children", "Comedy", "Crime",
+        "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "Musical",
+        "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
+
+    # open a connection to the SQLite database file
+    conn = sqlite3.connect(db_file_path)
+    # create a cursor so we can run SQL commands
+    cur = conn.cursor()
+
+    try:
+        # start a transaction so all changes apply together
+        conn.execute("BEGIN")
+        # drop the 'genres' table if it exists so we start clean
+        cur.execute("DROP TABLE IF EXISTS genres;")
+        # create the 'genres' table with an id and a unique name
+        cur.execute("""
+            CREATE TABLE genres (
+                genre_id INTEGER PRIMARY KEY,
+                genre_name TEXT UNIQUE);""")
+
+        # insert each genre name as one row into the 'genres' table
+        for name in genre_names:
+            # insert or ignore so we do not fail if it already exists
+            cur.execute("INSERT OR IGNORE INTO genres (genre_name) VALUES (?);", (name,))
+
+        # drop the 'movie_genres' table if it exists so we start clean
+        cur.execute("DROP TABLE IF EXISTS movie_genres;")
+        # create the link table between movies and genres
+        cur.execute("""
+            CREATE TABLE movie_genres (
+                movie_id INTEGER,
+                genre_id INTEGER,
+                PRIMARY KEY (movie_id, genre_id));""")
+
+        # define total count of link placehlder
+        link_count=0
+        # for each genre, we select all movie_id where the flag is 1 and insert links
+        for name in genre_names:
+            # get the numeric id for this genre name
+            cur.execute("SELECT genre_id FROM genres WHERE genre_name = ?;", (name,))
+            row = cur.fetchone()
+            # if the genre id is not found, skip
+            if not row:
+                continue
+            genre_id = int(row[0])
+
+            # build SQL that picks movie_id where this genre flag equals 1
+            sql = f"SELECT movie_id FROM movies WHERE \"{name}\" = 1;"
+            # run the query to get all matching movie ids
+            cur.execute(sql)
+            movie_rows = cur.fetchall()
+
+            # insert one row into movie_genres for each (movie_id, genre_id) pair
+            for (movie_id,) in movie_rows:
+                cur.execute(
+                    "INSERT OR IGNORE INTO movie_genres (movie_id, genre_id) VALUES (?, ?);",
+                    (int(movie_id), genre_id),)
+                # increament the total link count
+                link_count += 1
+
+        # create indexes to make genre queries fast
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_genres_name ON genres(genre_name);")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_movie_genres_genre ON movie_genres(genre_id);")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_movie_genres_movie ON movie_genres(movie_id);")
+
+        # commit the transaction so all changes are saved
+        conn.commit()
+        # execute the count select
+        cur.execute("SELECT COUNT(*) FROM genres;")
+        genre_count = int(cur.fetchone()[0])
+        logger.info("Built {genre_count} genres and {link_count} movie-genre links.")
+        return {
+            "success": True,
+            "message": "Genres normalized successfully.",
+            "genre_count": genre_count,
+            "movie_genre_links": link_count,}
+
+    except Exception as ex:
+        # if something goes wrong, roll back all changes
+        conn.rollback()
+        logger.error(f"Failed to normalize genres: {str(ex)}")
+        return {
+            "success": False, 
+            "message": str(ex), 
+            "genre_count": 0, 
+            "movie_genre_links": 0}
+
+    finally:
+        # always close the connection at the end
+        conn.close()
+
+
+
+# update movie status
+def create_movie_rating_stats_tbl(db_file_path: str) -> Dict:
+    """Function to add 'avg_rating' and 'num_ratings' to 'movies' and fill them from 'ratings'.
+
+    Args
+    ----
+    db_file_path (str): Path to the SQLite database file.
+
+    Returns:
+        Dict: containing the success message and log.
+    """
+    # open a connection to the SQLite database file
+    conn = sqlite3.connect(db_file_path)
+    # create a cursor so we can run SQL commands
+    cur = conn.cursor()
+
+    try:
+        # start a transaction so updates are applied together
+        conn.execute("BEGIN")
+        # add 'avg_rating' column if it does not exist yet
+        cur.execute("""ALTER TABLE movies ADD COLUMN avg_rating REAL""")
+    except sqlite3.OperationalError:
+        # if the column already exists, SQLite raises an error; we ignore it
+        pass
+
+    try:
+        # add 'num_ratings' column if it does not exist yet
+        cur.execute("""ALTER TABLE movies ADD COLUMN num_ratings INTEGER""")
+    except sqlite3.OperationalError:
+        # if the column already exists, ignore the error
+        pass
+
+    try:
+        # compute average rating and number of ratings per movie using the ratings table
+        cur.execute("""
+            WITH stats AS (
+                SELECT
+                    movie_id,
+                    AVG(rating) AS avg_rating,
+                    COUNT(*) AS num_ratings
+                FROM ratings
+                GROUP BY movie_id
+            )
+            UPDATE movies
+            SET
+                avg_rating = (SELECT stats.avg_rating FROM stats WHERE stats.movie_id = movies.movie_id),
+                num_ratings = (SELECT stats.num_ratings FROM stats WHERE stats.movie_id = movies.movie_id);""")
+
+        # create indexes so sorting and filtering by these fields is fast
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_movies_avg ON movies(avg_rating);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_movies_num ON movies(num_ratings);")
+
+        # commit all changes
+        conn.commit()
+        cur.execute("SELECT COUNT(*) FROM movies WHERE num_ratings IS NOT NULL;")
+        updated_count = int(cur.fetchone()[0])
+        logger.info("Updated %d movies with avg_rating and num_ratings.", updated_count)
+        return {
+            "success": True,
+            "message": "Movie stats updated successfully.",
+            "updated_movies": updated_count}
+
+    except Exception as ex:
+        # if anything fails, roll back to keep the database clean
+        conn.rollback()
+        conn.rollback()
+        logger.error("Failed to update movie stats: %s", ex)
+        return {"success": False, "message": str(ex), "updated_movies": 0}
+
+    finally:
+        # always close the connection
+        conn.close()
 
 
 
