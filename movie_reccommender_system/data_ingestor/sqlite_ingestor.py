@@ -76,7 +76,7 @@ def insert_movies_and_ratings_into_sqlite(
             for row in movies_df.itertuples(index=False, name=None))  
 
         # insert the movies in chunks for speed and low memory
-        logger.info("Inserting movies in chunks of %d rows...", chunk_size)  
+        logger.info(f"Inserting movies in chunks of rows: {chunk_size}")  
         # keep a running count
         total_movie_rows = 0               
         # get next batch           
