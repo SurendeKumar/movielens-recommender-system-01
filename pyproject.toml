@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "movie-recommender-system"
-version = "0.1.0"
+name = "movie-reccommender-system"
+version = "1.0.0"
 description = "A conversational AI movie assistant using FastAPI, SQLite, and LLMs."
 readme = "README.md"
 license = { text = "MIT" }

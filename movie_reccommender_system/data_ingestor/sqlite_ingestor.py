@@ -13,113 +13,12 @@ logging.basicConfig(
 logger = logging.getLogger("sqlite_inserter")  
 
 
-# split data into chunks
-def split_into_chunks(
-        row_iterator, 
-        chunk_size: int):
-    """Function to split an iterator of rows into small lists of rows.
-        This is to helps us send many rows to SQLite in one call
-        (executemany), which is faster than one-by-one inserts.
-
-    Args
-        row_iterator: An iterator that gives us one row (tuple) at a time.
-        chunk_size (int): size to define the how many rows to group together in each chunk.
-
-    Yield: 
-        list: A list of rows (each row is a tuple), up to chunk_size long.
-    """
-    # start with an empty list to collect rows
-    chunk = [] 
-    # go over each row that comes from the iterator
-    for row in row_iterator: 
-        # add the row into the current batch 
-        chunk.append(row)    
-        # if the batch is big enough, give it back to the caller - check if we reached the limit
-        if len(chunk) >= chunk_size: 
-            # send the batch to the caller
-            yield chunk         
-             # reset the batch for the next rows      
-            chunk = []               
-    # after the loop, if any rows are left, send them too
-    if chunk:    
-        # send the final, smaller batch       
-        yield chunk    
-
-
-# handle the NaNs
-def change_none_if_nan(value):
-    """Function to change a NaN (Not a Number) into None so SQLite stores NULL.
-
-    Args
-        value : The value to check.
-
-    Returns:
-        The same value if it is not missing, or None if it is missing.
-    """
-    # if the value is considered missing by pandas, return None
-    if pd.isna(value): 
-        return None     
-    # otherwise return the value as-is
-    return value       
-
-
-
-# create the tables into sqlite
-def create_tables(db_connection: sqlite3.Connection):
-    """Function to create the 'movies' and 'ratings' tables with a fixed schema.
-
-    Args
-        db_connection (sqlite3.Connection): An open SQLite connection where tables should be created.
-
-    Returns:
-        None
-    """
-    # drop old movies table if it exists
-    db_connection.execute("DROP TABLE IF EXISTS movies;")  # start clean
-    # create a new movies table with 24 columns (MovieLens spec)
-    db_connection.execute("""
-        CREATE TABLE movies (
-            movie_id INTEGER PRIMARY KEY,
-            title TEXT,              
-            release_date TEXT,                 
-            video_release_date TEXT,            
-            imdb_url TEXT,                
-            unknown INTEGER,              
-            Action INTEGER,
-            Adventure INTEGER,
-            Animation INTEGER,
-            Children INTEGER,
-            Comedy INTEGER,
-            Crime INTEGER,
-            Documentary INTEGER,
-            Drama INTEGER,
-            Fantasy INTEGER,
-            "Film-Noir" INTEGER,
-            Horror INTEGER,
-            Musical INTEGER,
-            Mystery INTEGER,
-            Romance INTEGER,
-            "Sci-Fi" INTEGER,
-            Thriller INTEGER,
-            War INTEGER,
-            Western INTEGER);""")
-
-    # drop old ratings table if it exists
-    db_connection.execute("DROP TABLE IF EXISTS ratings;")
-    # create a new ratings table for user ratings
-    db_connection.execute("""
-        CREATE TABLE ratings (
-            user_id INTEGER, 
-            movie_id INTEGER, 
-            rating INTEGER,
-            unix_time INTEGER );""")
-
-
+# insert data into DB 
 def insert_movies_and_ratings_into_sqlite(
     movies_df: pd.DataFrame,
     ratings_df: pd.DataFrame,
     db_file_path: str = "movie_reccommender_system/db/movies.db",
-    chunk_size: int = 5000,) -> Dict[str, int]:
+    chunk_size: int = 5000):
     """Function to insert MovieLens data frames into a SQLite database.
         Function:
         1) opens (or creates) the database file,
@@ -228,7 +127,116 @@ def insert_movies_and_ratings_into_sqlite(
         logger.info("Inserted %d movies and %d ratings.", movie_count, rating_count) 
 
         # return counts so tests can assert exact numbers
-        return {"movie_rows": int(movie_count), "rating_rows": int(rating_count)}  
+        return {
+            "status":"success",
+            "message":"Successfully inserting records.",
+            "movie_rows": int(movie_count), 
+            "rating_rows": int(rating_count)}  
+
+
+
+# split data into chunks
+def split_into_chunks(
+        row_iterator, 
+        chunk_size: int):
+    """Function to split an iterator of rows into small lists of rows.
+        This is to helps us send many rows to SQLite in one call
+        (executemany), which is faster than one-by-one inserts.
+
+    Args
+        row_iterator: An iterator that gives us one row (tuple) at a time.
+        chunk_size (int): size to define the how many rows to group together in each chunk.
+
+    Yield: 
+        list: A list of rows (each row is a tuple), up to chunk_size long.
+    """
+    # start with an empty list to collect rows
+    chunk = [] 
+    # go over each row that comes from the iterator
+    for row in row_iterator: 
+        # add the row into the current batch 
+        chunk.append(row)    
+        # if the batch is big enough, give it back to the caller - check if we reached the limit
+        if len(chunk) >= chunk_size: 
+            # send the batch to the caller
+            yield chunk         
+             # reset the batch for the next rows      
+            chunk = []               
+    # after the loop, if any rows are left, send them too
+    if chunk:    
+        # send the final, smaller batch       
+        yield chunk    
+
+
+# handle the NaNs
+def change_none_if_nan(value):
+    """Function to change a NaN (Not a Number) into None so SQLite stores NULL.
+
+    Args
+        value : The value to check.
+
+    Returns:
+        The same value if it is not missing, or None if it is missing.
+    """
+    # if the value is considered missing by pandas, return None
+    if pd.isna(value): 
+        return None     
+    # otherwise return the value as-is
+    return value       
+
+
+
+# create the tables into sqlite
+def create_tables(db_connection: sqlite3.Connection):
+    """Function to create the 'movies' and 'ratings' tables with a fixed schema.
+
+    Args
+        db_connection (sqlite3.Connection): An open SQLite connection where tables should be created.
+
+    Returns:
+        None
+    """
+    # drop old movies table if it exists
+    db_connection.execute("DROP TABLE IF EXISTS movies;")  # start clean
+    # create a new movies table with 24 columns (MovieLens spec)
+    db_connection.execute("""
+        CREATE TABLE movies (
+            movie_id INTEGER PRIMARY KEY,
+            title TEXT,              
+            release_date TEXT,                 
+            video_release_date TEXT,            
+            imdb_url TEXT,                
+            unknown INTEGER,              
+            Action INTEGER,
+            Adventure INTEGER,
+            Animation INTEGER,
+            Children INTEGER,
+            Comedy INTEGER,
+            Crime INTEGER,
+            Documentary INTEGER,
+            Drama INTEGER,
+            Fantasy INTEGER,
+            "Film-Noir" INTEGER,
+            Horror INTEGER,
+            Musical INTEGER,
+            Mystery INTEGER,
+            Romance INTEGER,
+            "Sci-Fi" INTEGER,
+            Thriller INTEGER,
+            War INTEGER,
+            Western INTEGER);""")
+
+    # drop old ratings table if it exists
+    db_connection.execute("DROP TABLE IF EXISTS ratings;")
+    # create a new ratings table for user ratings
+    db_connection.execute("""
+        CREATE TABLE ratings (
+            user_id INTEGER, 
+            movie_id INTEGER, 
+            rating INTEGER,
+            unix_time INTEGER );""")
+
+
 
 
 
