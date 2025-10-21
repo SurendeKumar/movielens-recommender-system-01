@@ -104,9 +104,7 @@ uvicorn app:app --reload
 
 - `GET /version` → API Version check
 - `GET /status` → API status check
-- `POST /query` → Ask natural language questions (*“Tell me about Inception”*)  
-- `GET /movies/{movie_id}` → Retrieve structured details about a movie  
-- `GET /recommendations` → Recommend movies with filters (genre, year, rating)  
+
 
 ---
 
