@@ -100,47 +100,16 @@ uvicorn app:app --reload
 ./startup.sh (macOS/Linux - save .ps1 as .sh)
 ```
 
-## API Endpoints
 
-- `GET /version` → API Version check
-- `GET /status` → API status check
-
-
----
-
-## LLM Integration
-
-Supports multiple providers (via `.env` config):  
-- **Hugging Face Transformers** (local or hosted)  
-- **Ollama** (local inference)  
-- **OpenAI API** (`gpt-4o-mini`, `gpt-4.1`)  
-
-LLMs are used to:  
-- Phrase results conversationally  
-- Explain recommendations  
-- Handle ambiguous queries with clarifying questions  
-
----
-
-## Running with Docker
+## 7. Running with Docker
 
 Build and start with Docker Compose:
 ```bash
 docker-compose up --build
 ```
 
----
 
-## Testing
-
-Run tests with:
-```bash
-pytest tests/
-```
-
----
-
-**How the system works so far???**
+## API Endpoints
 
 Part 1: **Data Ingestion**
 ----------------------------
@@ -200,9 +169,20 @@ So when starting fresh, the order is:
     *   Call POST /ingest/data-ingestor once.
         
     *   Confirms DB is ready with movies, ratings, genres, stats.
-        
-2.  **Query processing**
-    
-    *   Call POST /query/parse (if you want to debug parser).
-        
-    *   Call POST /query/execute to actually get movie results.
+
+
+Part 3: **LLM Integration**
+Supports multiple providers (via `.env` config):  
+- **Hugging Face llama**
+
+LLMs are used only for movie recommendations
+
+---
+
+
+## Testing
+
+Run tests with:
+```bash
+pytest tests/
+```
