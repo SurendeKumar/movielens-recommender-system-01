@@ -157,18 +157,6 @@ Goal: Parse natural language queries → detect intent + slots → run SQL to fe
 3.  **Check logs**
     
     *   You’ll see info logs for parsing, SQL execution, and number of rows returned.
-        
-
-🔄 Run Flow in Order
---------------------
-
-So when starting fresh, the order is:
-
-1.  **Ingest data**
-    
-    *   Call POST /ingest/data-ingestor once.
-        
-    *   Confirms DB is ready with movies, ratings, genres, stats.
 
 
 Part 3: **LLM Integration**
@@ -176,6 +164,26 @@ Supports multiple providers (via `.env` config):
 - **Hugging Face llama**
 
 LLMs are used only for movie recommendations
+
+---
+
+
+## Run Flow in Order
+--------------------
+
+So when starting fresh, the order is:
+
+1.  **Ingest data**
+    
+    * Call POST /ingest/data-ingestor once.
+        
+    * Confirms DB is ready with movies, ratings, genres, stats.
+  
+2. **Query processing**
+
+    * Call POST /query/parse (if you want to debug parser).
+
+    * Call POST /query/execute to actually get movie results.
 
 ---
 
