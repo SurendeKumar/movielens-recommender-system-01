@@ -1,5 +1,6 @@
 import os         
 import sqlite3    
+
 import logging    
 from typing import Dict  
 import pandas as pd 
@@ -10,7 +11,7 @@ logging.basicConfig(
     level=logging.INFO,  
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
 # loger as liner
-logger = logging.getLogger("sqlite_inserter")  
+logger = logging.getLogger("sqlite_inserter")
 
 
 # insert data into DB 

@@ -67,7 +67,7 @@ def user_query_parser(text: str):
     # extract years (single or range)
     year, year_from, year_to = get_years_from_text(text)
     # extract minimal rating if any
-    minimal_ratings = get_min_rating_from_text(text)
+    minimal_ratings, rating_compare = get_min_rating_from_text(text)
     # extract genres list
     genres = get_genres_from_text(text)
     # extract a possible movie title
@@ -113,6 +113,7 @@ def user_query_parser(text: str):
             year_from=year_from or None,
             year_to=year_to or None,
             min_rating=minimal_ratings or None,
+            rating_compare=rating_compare, 
             top_n=top_n_value,
             sort="rating",)
 
@@ -238,6 +239,16 @@ def get_years_from_text(text: str):
             y1, y2 = int(a), int(c)
             year_from, year_to = (min(y1, y2), max(y1, y2))
 
+    # check for "between Y and Z" pattern
+    for i in range(len(word_list) - 3):
+        # take four consecutive words
+        a, b, c, d = word_list[i], word_list[i + 1], word_list[i + 2], word_list[i + 3]
+        # if pattern matches "between 2015 and 2020"
+        if a == "between" and query_preprocessing.is_four_digit_year(b) and c == "and" and query_preprocessing.is_four_digit_year(d):
+            # assign year_from and year_to in sorted order
+            y1, y2 = int(b), int(d)
+            year_from, year_to = (min(y1, y2), max(y1, y2))
+
     # if we still do not have a range or a 'since' try to capture a single year - loop over all words
     if year_from is None and year_to is None:
         # collect all years present
@@ -289,9 +300,11 @@ def get_years_from_text_using_regex(text: str):
 def get_min_rating_from_text(text: str):
     """Function to find a minimal rating threshold (1..5) in the text.
     Supports patterns like:
-        - 'rating 4'
-        - 'rating at least 4'
-        - 'min 4' or 'minimum 4'
+        - "rating 4"
+        - "rating at least 4"
+        - "rating greater than 3"
+        - "rating less than 3.5"
+        - "min 4" or "minimum 4"
 
     Args:
         text (str): Incoming text from user's query.
@@ -311,31 +324,53 @@ def get_min_rating_from_text(text: str):
         if word_list[i] == "rating":
             # read the next token
             next_word = word_list[i + 1]
-            # if the next token is 'at' we try to read two tokens ahead ("at least 4")
-            if next_word == "at" and i + 3 < len(word_list) and word_list[i + 2] == "least":
+            # pattern 1. if the next token is 'at' we try to read two tokens ahead ("at least 4")
+            if next_word == "at" and i + 2 < len(word_list) and word_list[i + 2] == "least":
                 # try to parse the number at i+3
                 rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
                 # if parsed, clamp to 1..5 and return
                 if rating_value is not None:
-                    return max(1.0, min(5.0, rating_value))
+                    return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
+                
+            # pattern 2: "rating greater than 3"
+            if next_word == "greater" and i + 3 < len(word_list) and word_list[i + 2] == "than":
+                # try to parse the number at i+3
+                rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
+                # if parsed, clamp to 1..5 and return
+                if rating_value is not None:
+                    return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
+                
+            # pattern 3: "rating less than 3.5"
+            if next_word == "less" and i + 3 < len(word_list) and word_list[i + 2] == "than":
+                # try to parse the number at i+3
+                rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
+                # if parsed, clamp to 1..5 and return
+                if rating_value is not None:
+                    return (max(1.0, min(5.0, rating_value)), "less_than_or_equal")
+            
+            # pattern 4: "rating 4" 
+            rating_value = query_preprocessing.parse_float_safe(next_word)
+            if rating_value is not None:
+                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
                 
             # otherwise if the next token is a number, parse it
-            num = query_preprocessing.parse_float_safe(next_word)
+            rating_value = query_preprocessing.parse_float_safe(next_word)
             # if we parsed a number, clamp and return
-            if num is not None:
-                return max(1.0, min(5.0, num))
+            if rating_value is not None:
+                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
 
     # loop again for 'min' or 'minimum'
     for i in range(len(word_list) - 1):
         # check for 'min' or 'minimum'
         if word_list[i] in ("min", "minimum"):
             # try to parse the next token as a number
-            num = query_preprocessing.parse_float_safe(word_list[i + 1])
+            rating_value = query_preprocessing.parse_float_safe(word_list[i + 1])
             # if parsed, clamp and return
-            if num is not None:
-                return max(1.0, min(5.0, num))
+            if rating_value is not None:
+                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
 
-    return None
+    return (None, None)
+
 
 
 # 4. find genres 
@@ -379,10 +414,12 @@ def get_genres_from_text(text: str):
 def get_title_from_text(text: str):
     """Function to extract a movie title from text.
         main steps:
-            1) text inside double quotes "..."
-            2) text inside single quotes '...'
-            3) words after 'about ' or 'like ' to the end
-    
+            1) quoted text: "..." or '...'
+            2) after 'about '
+            3) after 'like '
+            4) after 'who directed '
+            5) after 'who starred ' or 'who starred in '
+        
     Args:
         text (str): Incoming text from user's query.
     
@@ -416,18 +453,39 @@ def get_title_from_text(text: str):
     # make a lower-case copy for simple phrase checks
     convert_to_lowercase = query_preprocessing.covnert_text_to_lower_case(raw_text)
 
-    # 3. if the text contains 'about ', return everything after it (best-effort)
+    # 3. if the text contains 'about ', return everything after it
     if "about " in convert_to_lowercase:
         # find where 'about ' starts
-        k = convert_to_lowercase.find("about ")
+        pos = convert_to_lowercase.find("about ")
         # slice the raw text after that phrase to keep original casing
-        return raw_text[k + len("about ") :].strip()
+        return raw_text[pos + len("about ") :].strip()
 
-    # 4. if the text contains 'like ', return everything after it (best-effort)
+    # 4. if the text contains 'like ', return everything after it 
     if "like " in convert_to_lowercase:
         # find where 'like ' starts
-        k = convert_to_lowercase.find("like ")
+        pos = convert_to_lowercase.find("like ")
         # slice the raw text after that phrase to keep original casing
-        return raw_text[k + len("like ") :].strip()
+        return raw_text[pos + len("like ") :].strip()
+    
+    # 5. if the text contains 'who directed', return everything after it  
+    if "who directed " in convert_to_lowercase:
+        # find where 'who directed ' starts
+        pos = convert_to_lowercase.find("who directed ")
+        # slice the raw text after that phrase to keep original casing
+        return raw_text[pos + len("who directed ") :].strip()
+
+    # 6. if the text contains 'who starred in', everything after it
+    if "who starred in " in convert_to_lowercase:
+        # find where 'who starred in ' starts
+        pos = convert_to_lowercase.find("who starred in ")
+        # slice the raw text after that phrase to keep original casing
+        return raw_text[pos + len("who starred in ") :].strip()
+
+    # handle 'who starred ' without 'in',  everything after it
+    if "who starred " in convert_to_lowercase:
+        # find where 'who starred in ' starts
+        pos = convert_to_lowercase.find("who starred ")
+        # slice the raw text after that phrase to keep original casing
+        return raw_text[pos + len("who starred ") :].strip()
 
     return ""

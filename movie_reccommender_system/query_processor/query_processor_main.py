@@ -69,13 +69,17 @@ class MovielensQueryProcessor:
         for title, release_date, avg_rating, num_ratings in rows:
             # compute display year from release_date
             year = query_preprocessing.extract_year_from_text(release_date)
+            # define avg_rating float vlaue
+            avg_rating_value=float(round(avg_rating, 3)) if avg_rating is not None else None
+            # define num rating value
+            num_ratings_value=int(num_ratings) if num_ratings is not None else None
             # append one SingleRowMovieRecord
             output_response_list.append(
                 SingleRowMovieRecord(
                     title=title,
                     year=year if year else None,
-                    avg_rating=round(avg_rating, 3) if avg_rating is not None else None,
-                    num_ratings=int(num_ratings) if num_ratings is not None else None,))
+                    avg_rating=avg_rating_value,
+                    num_ratings=num_ratings_value))
         
         logger.info(f"Converted to {len(output_response_list)} response rows")
         return output_response_list
@@ -98,7 +102,7 @@ class MovielensQueryProcessor:
         """
         logger.info(f"GET_DETAILS -> title: {parsed.title}, limit: {limit}")
         # open connection - sqlite
-        with self._connect() as conn:
+        with self.build_connection() as conn:
             # create cursor
             cur = conn.cursor()
             # build pattern with wildcards
@@ -122,7 +126,7 @@ class MovielensQueryProcessor:
             rows = cur.fetchall()
             logger.info(f"GET_DETAILS: fetched {len(rows)} rows")
             # convert to response models - SingleRowMovieRecord
-            single_row_response = self._rows_to_movies(rows)
+            single_row_response = self.convert_rows_to_response_model(rows)
             return single_row_response
         
 
@@ -140,7 +144,7 @@ class MovielensQueryProcessor:
             list: containing the SingleRowMovieRecord.
         """
         # open connection
-        with self._connect() as conn:
+        with self.build_connection() as conn:
             # create cursor
             cur = conn.cursor()
 
@@ -184,9 +188,18 @@ class MovielensQueryProcessor:
                     params_list.append(parsed.year_to)
 
             # apply min rating if present
+            # if parsed.min_rating:
+            #     where.append("m.avg_rating >= ?")
+            #     params_list.append(parsed.min_rating)
+            
             if parsed.min_rating:
-                where.append("m.avg_rating >= ?")
+                # choose operator based on plain-english compare
+                if parsed.rating_compare == "less_than_or_equal":
+                    where.append("m.avg_rating <= ?")
+                else:
+                    where.append("m.avg_rating >= ?")
                 params_list.append(parsed.min_rating)
+
 
             # stitch where if any
             if where:
@@ -209,7 +222,7 @@ class MovielensQueryProcessor:
             rows = cur.fetchall()
             logger.info(f"RECOMMEND_BY_FILTER -> fetched {len(rows)} rows")
             # convert to response model - SingleRowMovieRecord
-            output_row_response=self._rows_to_movies(rows)
+            output_row_response=self.convert_rows_to_response_model(rows)
             return output_row_response
 
 
@@ -228,7 +241,7 @@ class MovielensQueryProcessor:
         """
         logger.info(f"TOP_N -> requested top_n: {getattr(parsed, 'top_n', None)}")
         #  reusing the filter recommender with parsed.top_n
-        output_row_response=self.run_recommend_by_filter(parsed, limit=parsed.top_n)
+        output_row_response=self.run_recommend_movie_by_filter(parsed, limit=parsed.top_n)
         return output_row_response
     
 
@@ -247,7 +260,7 @@ class MovielensQueryProcessor:
         """
         logger.info(f"SIMILAR_MOVIES -> base title: {parsed.title} and limit: {limit}")
         # open connection
-        with self._connect() as conn:
+        with self.build_connection() as conn:
             # cursor
             cur = conn.cursor()
 
@@ -287,7 +300,7 @@ class MovielensQueryProcessor:
             rows = cur.fetchall()
             logger.info(f"SIMILAR_MOVIES: fetched: {len(rows)} rows and {base_id}")
             # convert to rfesponse models - SingleRowMovieRecord
-            output_row_response=self._rows_to_movies(rows)
+            output_row_response=self.convert_rows_to_response_model(rows)
             return output_row_response
 
 

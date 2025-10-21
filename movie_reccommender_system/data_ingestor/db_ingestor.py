@@ -322,7 +322,7 @@ def create_genres_tbl(db_file_path: str) -> Dict:
         # execute the count select
         cur.execute("SELECT COUNT(*) FROM genres;")
         genre_count = int(cur.fetchone()[0])
-        logger.info("Built {genre_count} genres and {link_count} movie-genre links.")
+        logger.info(f"Built {genre_count} genres and {link_count} movie-genre links.")
         return {
             "success": True,
             "message": "Genres normalized successfully.",
@@ -350,8 +350,7 @@ def create_movie_rating_stats_tbl(db_file_path: str) -> Dict:
     """Function to add 'avg_rating' and 'num_ratings' to 'movies' and fill them from 'ratings'.
 
     Args
-    ----
-    db_file_path (str): Path to the SQLite database file.
+        db_file_path (str): Path to the SQLite database file.
 
     Returns:
         Dict: containing the success message and log.
@@ -401,7 +400,7 @@ def create_movie_rating_stats_tbl(db_file_path: str) -> Dict:
         conn.commit()
         cur.execute("SELECT COUNT(*) FROM movies WHERE num_ratings IS NOT NULL;")
         updated_count = int(cur.fetchone()[0])
-        logger.info("Updated %d movies with avg_rating and num_ratings.", updated_count)
+        logger.info(f"Updated {updated_count} movies with avg_rating and num_ratings.")
         return {
             "success": True,
             "message": "Movie stats updated successfully.",
@@ -411,8 +410,11 @@ def create_movie_rating_stats_tbl(db_file_path: str) -> Dict:
         # if anything fails, roll back to keep the database clean
         conn.rollback()
         conn.rollback()
-        logger.error("Failed to update movie stats: %s", ex)
-        return {"success": False, "message": str(ex), "updated_movies": 0}
+        logger.error(f"Failed to update movie stats: {ex}")
+        return {
+            "success": False, 
+            "message": str(ex), 
+            "updated_movies": 0}
 
     finally:
         # always close the connection

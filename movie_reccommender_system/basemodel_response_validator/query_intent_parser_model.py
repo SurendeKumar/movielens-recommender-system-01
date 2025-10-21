@@ -48,6 +48,12 @@ class QueryParser(BaseModel):
     # minimum rating threshold 1..5
     min_rating: Optional[float]=Field(None, description="Minimum avg rating filter (1..5).")
 
+     # rating comparison, None means not specified
+    rating_compare: Optional[
+        Literal["greater_than_or_equal", "less_than_or_equal"]] = Field(
+            None,
+            description="How to compare rating: greater_than_or_equal (>=) or less_than_or_equal (<=).",)
+
     # how many items user wants (top N)
     top_n: int=Field(10, description="How many results to return, default 10.")
 
@@ -90,7 +96,7 @@ class SingleRowMovieRecord(BaseModel):
     # release year for display
     year: Optional[int]=None
     # average rating if available
-    avg_rating: Optional[int]=None
+    avg_rating: Optional[float]=None
     # number of ratings if available
     num_ratings: Optional[int]=None
 
