@@ -1,13 +1,21 @@
-"""FastAPI endpoints for ingestion with Pydantic response models."""
+""" Movielens Data Ingestor Router """
 import os
 import logging
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from movie_reccommender_system.basemodel_response_validator import data_ingestor_model
 from movie_reccommender_system.data_ingestor.data_ingestor_main import MovieLensSqliteIngestor
 # initiate load_dotenv
 load_dotenv()
+# define basic config
+logging.basicConfig(
+    level=logging.INFO,  
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+# logger for this router
+logger = logging.getLogger("data_ingestor_api")
+
 # set up router
 router = APIRouter(tags=["movielens-data-ingestion"])
 
@@ -22,83 +30,62 @@ DataIngestor = MovieLensSqliteIngestor(
     chunk_size=5000)
 
 
-# define Pydantic response model
-class MovieLensInsertResponse(BaseModel):
-    status: str = Field(..., description="success or failure string")
-    message: str
-    movie_rows: int
-    rating_rows: int
-
-
-class GenresResponse(BaseModel):
-    success: bool
-    message: str
-    genre_count: int
-    movie_genre_links: int
-
-
-class MovieRatingStatsResponse(BaseModel):
-    success: bool
-    message: str
-    updated_movies: int
-
-
-class MovielensCompleteResponse(BaseModel):
-    insert_movielens: MovieLensInsertResponse
-    genres_movie_ratings: GenresResponse
-    movie_rating_stats: MovieRatingStatsResponse
-
-
-class MovieLensIgenstorResponse(BaseModel):
-    success: bool
-    message: str
-    steps: MovielensCompleteResponse
-
-
 # 1. movielens data insertion
 @router.post(
         "/ingest/data-insertion", 
-        response_model=MovieLensInsertResponse)
+        response_model=data_ingestor_model.MovieLensInsertResponse)
 def ingest_insert_only():
     """
     - Insert movies and ratings. 
     - POST because it mutates the DB.
     """
-    return DataIngestor.run_movielens_data_insertion()
+    logger.info("Starting /ingest/data-insertion request")
+    result = DataIngestor.run_movielens_data_insertion()
+    logger.info(f"Completed /ingest/data-insertion: inserted {result.get('movie_rows', 0)} movies, {result.get('rating_rows', 0)} ratings")
+    return result
 
 
 # 2. genres per movies
 @router.post(
         "/ingest/genres", 
-        response_model=GenresResponse)
+        response_model=data_ingestor_model.GenresResponse)
 def ingest_genres_only():
     """
     - Build genres and movie_genres tables from the movies table. 
     - POST because it mutates the DB.
     """
-    return DataIngestor.run_genres_insertion()
+    logger.info(f"Starting /ingest/genres request..")
+    result=DataIngestor.run_genres_insertion()
+    logger.info(f"Completed /ingest/genres -> created {result.get('genre_count', 0)} genres, {result.get('movie_genre_links', 0)} movie-genre links")
+    return result
 
 
 # 3. movies & ratings stats compuation insertion
 @router.post(
         "/ingest/movie-ratings-stats",
-        response_model=MovieRatingStatsResponse)
+        response_model=data_ingestor_model.MovieRatingStatsResponse)
 def ingest_movie_stats_only():
     """
     - Compute and update avg_rating and num_ratings per movie. 
     - POST because it mutates the DB.
     """
-    return DataIngestor.run_movie_ratings_stats_insertion()
+    logger.info(f"Starting /ingest/movie-ratings-stats request..")
+    result = DataIngestor.run_movie_ratings_stats_insertion()
+    logger.info(f"Completed /ingest/movie-ratings-stats -> updated {result.get('updated_movies', 0)} movies")
+    return result
 
 
 
 # 4. run all ingestors in order
 @router.post(
         "/ingest/data-ingestor", 
-        response_model=MovieLensIgenstorResponse)
+        response_model=data_ingestor_model.MovieLensIgenstorResponse)
 def ingest_full():
     """
     - Run the whole ingestion flow in the right order. 
     - POST because it mutates the DB.
     """
-    return DataIngestor.run_data_ingestor()
+    logger.info(f"Starting /ingest/data-ingestor..")
+    result = DataIngestor.run_data_ingestor()
+    logger.info(f"Completed /ingest/data-ingestor -> success: {result.get('success', False)} , message: {result.get('message', '')}")
+    return result

@@ -142,11 +142,69 @@ pytest tests/
 
 ---
 
-## Roadmap
+**How the system works so far???**
 
-- [ ] Add semantic search with embeddings (FAISS/pgvector)  
-- [ ] Enhance query parsing with LLM-based slot extraction  
-- [ ] Add personalization (history-based recommendations)  
-- [ ] Improve explanation style with prompt tuning  
+Part 1: **Data Ingestion**
+----------------------------
 
----
+Goal: Get MovieLens data into your SQLite DB, normalize genres, and compute stats.
+
+### Steps:
+
+1.  uvicorn app:app --reload (assuming your entrypoint is app.py with app = FastAPI())
+    
+2.  OR run everything in one go:
+    
+    *   POST /ingest/data-insertion → loads u.item + u.data → inserts movies and ratings.
+        
+    *   POST /ingest/genres → builds genres + movie\_genres.
+        
+    *   POST /ingest/movie-ratings-stats → computes avg\_rating + num\_ratings.
+        
+    
+    *   POST /ingest/data-ingestor → runs all 3 steps in sequence.
+        
+        
+3.  **Check results in logs/DB**
+    
+    *   Logs show inserted counts, genres created, movies updated.
+        
+    *   sqlite3 movie\_reccommender\_system/db/movies.dbsqlite> .tablessqlite> SELECT COUNT(\*) FROM movies;
+        
+
+Part 2: **Query Processing**
+------------------------------
+
+Goal: Parse natural language queries → detect intent + slots → run SQL to fetch results.
+
+### Steps:
+
+1.  **Keep FastAPI app running** (same as above).
+    
+2.  **Call query endpoints:**
+    
+    *   { "text": "recommend action movies from 2020" }
+        
+    *   { "text": "recommend action movies from 2020", "limit": 5 }
+        
+3.  **Check logs**
+    
+    *   You’ll see info logs for parsing, SQL execution, and number of rows returned.
+        
+
+🔄 Run Flow in Order
+--------------------
+
+So when starting fresh, the order is:
+
+1.  **Ingest data**
+    
+    *   Call POST /ingest/data-ingestor once.
+        
+    *   Confirms DB is ready with movies, ratings, genres, stats.
+        
+2.  **Query processing**
+    
+    *   Call POST /query/parse (if you want to debug parser).
+        
+    *   Call POST /query/execute to actually get movie results.

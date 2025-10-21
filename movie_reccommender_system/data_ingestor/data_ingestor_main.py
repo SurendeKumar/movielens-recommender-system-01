@@ -40,7 +40,7 @@ class MovieLensSqliteIngestor:
             data_folder_path: str, 
             db_file_path: str, 
             chunk_size: int = 5000):
-        """Function to create a service with paths and chunk settings.
+        """Function to instantiate the objects to save the paths and chunk settings.
 
         Args
             data_folder_path (str): Folder that contains 'u.item' and 'u.data'.

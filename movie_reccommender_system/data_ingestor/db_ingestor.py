@@ -1,3 +1,4 @@
+""" SQLITE data ingestor """
 import os         
 import sqlite3    
 import logging    
