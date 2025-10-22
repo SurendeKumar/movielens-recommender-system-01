@@ -5,7 +5,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from movie_reccommender_system.basemodel_response_validator import data_ingestor_model
+from movie_reccommender_system.response_basemodel_validator import data_ingestor_model
 from movie_reccommender_system.data_ingestor.data_ingestor_main import MovieLensSqliteIngestor
 # initiate load_dotenv
 load_dotenv()

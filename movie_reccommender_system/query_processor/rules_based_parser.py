@@ -10,7 +10,7 @@ Note: easy conservative and easy to extend later.
 
 import re
 from movie_reccommender_system.utilities import query_preprocessing
-from movie_reccommender_system.basemodel_response_validator.query_intent_parser_model import QueryParser
+from movie_reccommender_system.response_basemodel_validator.query_intent_parser_model import QueryParser
 
 # define dict of known genres from DB
 KNOWN_GENRES = {

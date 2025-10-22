@@ -1,0 +1,172 @@
+Main tasks to be completed: 
+    Canonicalize the JSON: Validate a fixed schema {intent, slots, results[]}; coerce types (year→int, rating→float), dedupe by movieId, enforce sort order per intent, and cap results to a small N (e.g., 5–10).
+
+    Extract meta from slots: Build a compact context object: {result_count, seed_title, filters_text, time_window, rating_bounds}, derived from intent + slots (e.g., “genre=Drama, since 2015, ≥4.0”).
+
+    Reduce to essentials: From each result keep only {title, year, avg_rating, num_ratings, genres}; round ratings to 1 decimal, join genres, drop null/empty fields, and truncate any long strings.
+
+    Render a deterministic facts block: Convert the cleaned data into plain text lines like • Title (Year) — 4.3/5 — [Drama, Crime] preceded by one summary line using context. (This is the only content you’ll pass to the LLM later.)
+
+    Pre-handle edge cases: If result_count==0, generate a brief “no matches” facts block plus 1–2 auto-suggested relaxations from slots; if results overflow, optionally cluster (by genre/year) and select representatives before constructing the facts block._
+
+
+
+
+Point 1: llm_preprocessing.py
+
+Canonicalize the JSON: Validate a fixed schema {intent, slots, results[]}; coerce types (year→int, rating→float), dedupe by movieId, 
+enforce sort order per intent, and cap results to a small N (e.g., 5–10).
+
+What does point 1 exactly what was described in that step:
+    - Validates schema {intent, slots, results[]}.
+    - Coerces data types (year → int, rating → float, num_ratings → int).
+    - Deduplicates results by movieId.
+    - Applies sorting rules depending on the intent.
+    Caps results to a small number (default 10).
+
+
+How the point 1 works? 
+    - validate_input(data) → (intent, slots, results)
+        Checks dict shape and types; returns safe defaults.
+
+    - normalize_slots(slots) → clean_slots
+        Coerces years to int, ratings to float, leaves others as-is.
+
+    - normalize_result_row(row) → clean_row|None
+        Extracts {movieId,title,year,avg_rating,num_ratings,genres,similarity?} with coercions; returns None if invalid.
+
+    - dedupe_and_collect(rows) → list[clean_row]
+        Runs normalize_result_row per row and removes duplicates by movieId.
+
+    - sort_and_cap(intent, rows, max_results) → list[clean_row]
+        Applies intent→sort rule (e.g., TOP_N by rating/num_ratings), then slices to N.
+
+
+
+
+Point 2: 
+Extract meta from slots: Build a compact context object: {result_count, seed_title, filters_text, time_window, rating_bounds}, derived from intent + slots (e.g., “genre=Drama, since 2015, ≥4.0”).
+
+
+LLM Context Builder: (llm_context_builder.py)
+
+
+
+result_count: 2
+➝ There are 2 movies in the canonicalized results (The Dark Knight and Inception).
+This gives the LLM a quick summary of how many items are being reported.
+
+seed_title: null
+➝ No specific title was in your slots (like "title": "The Matrix").
+If you were running a "SIMILAR_MOVIES" or "GET_DETAILS" intent, you’d expect a seed title here.
+
+filters_text: "top titles; between 2000 and 2010; ≥ 4.0"
+➝ This is the compact human-readable summary of the query:
+
+"top titles" → because the intent is TOP_N.
+
+"between 2000 and 2010" → because slots included start_year and end_year.
+
+"≥ 4.0" → because you required a minimum rating of 4.0.
+This string is exactly what you’d feed into the LLM to explain what kind of query was run.
+
+time_window: "between 2000 and 2010"
+➝ A separate explicit field for the time range filter.
+Useful if you want the LLM (or your code) to highlight only the time part.
+
+rating_bounds: "≥ 4.0"
+➝ A separate explicit field for the rating filter.
+This makes it easy to mention or reason about ratings independently of the full filter string.
+
+
+
+Point 3: 
+
+Purpose: Take structured results (from Point 1 + Point 2) and transform them into natural, conversational text for the user.
+
+Inputs:
+    - canonical_data → cleaned, deduped, sorted movie list.
+    - context → compact metadata (filters, result count, time window, rating bounds, titles).
+
+Process:
+    - Combine filters_text + results into a facts block.
+    - Wrap with clear instructions so the LLM knows to summarize, not hallucinate.
+    - Provide a tone control (concise, friendly, formal, etc.) to shape response style.
+
+LLM Task:
+    - Read the structured facts and generate a short, natural sentence or paragraph.
+    - Example: “Here are the top movies released between 2000 and 2010 with ratings above 4.0: The Dark Knight and Inception.”
+
+Fallback Handling:
+    - If no results are found → instruct LLM to respond politely and suggest relaxing filters.
+
+
+
+
+point 5: Edge-case handling (design)
+
+A) Cases to detect (deterministically)
+
+    - No results: len(results) == 0.
+    - Overflow results: len(results) > max_results (use a hard cap).
+    - Sparse quality: results exist but many have avg_rating is None or num_ratings < min_count_threshold (e.g., < 50).
+    - Weak SIMILAR context: intent is SIMILAR_MOVIES but seed_title is missing.
+    - Thin metadata: many items missing year/genres (still respond, but note limits).
+    - Ties: identical sort keys (same rating/count); ensure a stable secondary key (e.g., title asc, then movieId).
+
+B) Policies (simple, deterministic)
+
+    - No results → suggest relaxations: produce a short, pre-LLM “hints” list derived from slots:
+        - Lower min_rating by 0.5
+        - Widen years (e.g., start_year -= 5, end_year += 5)
+        - Drop least common genre (if multiple)
+        - If title present, try alternate title orderings (“Godfather, The” ⇄ “The Godfather”)
+
+    - Overflow → diversify & cap:
+        - Default cap: max_results = 5 (hard cap 10).
+        - Diversify rule: group by primary genre (first in list) then round-robin take top-1 per group until you hit max_results. If still overflow, take remaining from the global top list.
+
+    - Quality floor (optional but helpful):
+        - For TOP_N / RECOMMEND*, prefer items with num_ratings >= 50. If not enough, fill with the rest.
+
+    - Truncation & formatting (reassert):
+        - Title max 80 chars (append …), genres show at most 3.
+        - Ratings: 1 decimal; counts: integers with no separators (or thin-space if you must).
+
+    - SIMILAR_MOVIES without seed: set a context note “similar titles (seed unknown)” so the LLM doesn’t reference a missing seed.
+
+    - Missing fields fallback:
+        - If avg_rating is missing for many items, sort by num_ratings then title.
+        - If both rating and count missing, sort by title.
+
+C) Outputs to add (pre-LLM)
+
+    - context.edge_notes: short machine-readable notes (e.g., ["no_results"], ["diversified_by_genre"], ["quality_floor_applied"], ["seed_missing"]).
+    - context.suggestions: up to 3 human-readable relaxations (derived from slots).
+    - context.sampled_from: if overflow, report original size, e.g., {"total": 37, "used": 5, "method": "genre_round_robin"}.
+
+D) LLM prompt tweaks (when these flags appear)
+    - If no_results: instruct the LLM to politely say none found and present context.suggestions as bullets.
+    - If diversified_by_genre: one line noting “showing a diverse set across genres”.
+    - If quality_floor_applied: “prioritized widely-rated titles.”
+    - If seed_missing: avoid phrases like “similar to <title>”.
+
+E) Minimal helper functions (no code now, just names)
+    - detect_edge_cases(canonical_data, max_results, min_count_threshold=50) -> dict[flags]
+    - make_relaxation_suggestions(slots) -> list[str]
+    - diversify_and_cap(results, max_results) -> list[dict] (primary-genre round-robin)
+    - apply_quality_floor(results, min_count_threshold) -> (preferred, fallback)
+    - annotate_context(context, flags, suggestions, sampled_from) -> context
+
+
+
+
+Point 6: Connect the LLM into your FastAPI pipeline:
+    
+    - Extend /query/execute (or create /query/answer) to:
+    - Run canonicalization (Point 1).
+    - Build context (Point 2).
+    - Apply edge handling (Point 5).
+    - Build prompt (facts block + context).
+    - Send the prompt into your LLM (HuggingFace text-generation pipeline with Llama3).
+    - Return both the structured JSON (canonicalized + context) and the natural LLM answer.

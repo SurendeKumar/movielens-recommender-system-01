@@ -3,7 +3,7 @@ import os
 import logging
 from fastapi import APIRouter
 from movie_reccommender_system.query_processor.rules_based_parser import user_query_parser
-from movie_reccommender_system.basemodel_response_validator import query_intent_parser_model
+from movie_reccommender_system.response_basemodel_validator import query_intent_parser_model
 from movie_reccommender_system.query_processor.query_processor_main import MovielensQueryProcessor
 # define basic config
 logging.basicConfig(

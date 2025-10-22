@@ -16,7 +16,7 @@ import sqlite3
 import logging
 from typing import List, Tuple
 from movie_reccommender_system.utilities import query_preprocessing
-from movie_reccommender_system.basemodel_response_validator.query_intent_parser_model import QueryParser, SingleRowMovieRecord
+from movie_reccommender_system.response_basemodel_validator.query_intent_parser_model import QueryParser, SingleRowMovieRecord
 # define basic config
 logging.basicConfig(
     level=logging.INFO,  
