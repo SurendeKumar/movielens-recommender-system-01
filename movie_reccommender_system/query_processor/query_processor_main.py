@@ -1,7 +1,6 @@
-"""
-Build and run SQL for parsed intents against the SQLite DB.
-
-This uses your existing schema:
+"""Build and run SQL for parsed intents against the SQLite DB.
+ 
+ Existing schema:
 - movies(title, release_date, avg_rating, num_ratings, ...)
 - genres(genre_id, genre_name)
 - movie_genres(movie_id, genre_id)
@@ -14,9 +13,10 @@ We keep queries simple, parameterized, and fast with your indexes.
 import os
 import sqlite3
 import logging
-from typing import List, Tuple
-from movie_reccommender_system.utilities import query_preprocessing
-from movie_reccommender_system.response_basemodel_validator.query_intent_parser_model import QueryParser, SingleRowMovieRecord
+from pydantic import BaseModel
+from typing import List, Tuple, Dict
+from movie_reccommender_system.query_processor import query_preprocessing
+from movie_reccommender_system.response_basemodel_validator.query_processor_model import QueryParser, SingleRowMovieRecord
 # define basic config
 logging.basicConfig(
     level=logging.INFO,  
@@ -37,7 +37,7 @@ class MovielensQueryProcessor:
         Args: 
             db_file_path (str):  Path to the SQLite database file.
         """
-        self.logger = logging.getLogger("movielens_query_processor")
+        self.logger = logging.getLogger("Main_Query_Processor")
         self.logger.info(f"Initialising MovielensQueryProcessor with DB path: {os.path.basename(db_file_path)}")
         # instantiate db_file_path
         self.db_file_path = db_file_path
@@ -294,8 +294,7 @@ class MovielensQueryProcessor:
                     ORDER BY m.avg_rating DESC, m.num_ratings DESC
                     LIMIT ?;
                 """,
-                (base_id, base_id, limit),
-            )
+                (base_id, base_id, limit),)
             # fetch rows
             rows = cur.fetchall()
             logger.info(f"SIMILAR_MOVIES: fetched: {len(rows)} rows and {base_id}")
@@ -304,7 +303,7 @@ class MovielensQueryProcessor:
             return output_row_response
 
 
-    # main dispatcher - query exectuor
+    # dispatcher as a query exectuor
     def query_excutor(
             self, 
             parsed: QueryParser, 
@@ -331,3 +330,78 @@ class MovielensQueryProcessor:
 
         logger.info(f"Dispatcher: UNKNOWN intent -> returning empty list")
         return []
+    
+
+    # main dispatcher to handle for output to reform what is expected for LLM inference
+    def query_executor_output_handler(
+            self, 
+            parsed: QueryParser,
+            limit=10):
+        """Function to handle the output format after query exectuor.
+
+        Args:
+            parsed: QueryParser object containing parsed intent and slots.
+            limit: maximum number of results to keep.
+
+        Returns:
+            Dict: containing the {intent, slots, results} for normalise_query_output before the LLM inference.
+        """
+        # decide the final limit by honoring parsed.top_n if present
+        final_limit = min(limit, parsed.top_n or limit)
+        # get raw_results - 
+        logger.info(f"Executing the query procesor to sample the raw_results.")
+        raw_results=self.query_excutor(parsed, limit=min(limit, parsed.top_n or limit))
+        # intent string
+        intent_value = parsed.intent or ""
+
+        # slots dictionary
+        slots_dict = {}
+        if getattr(parsed, "min_rating", None) is not None:
+            slots_dict["min_rating"] = str(parsed.min_rating)
+        if getattr(parsed, "year_from", None) is not None:
+            slots_dict["start_year"] = str(parsed.year_from)
+        if getattr(parsed, "year_to", None) is not None:
+            slots_dict["end_year"] = str(parsed.year_to)
+
+        # parse genres either list or joined string
+        parsed_genres = getattr(parsed, "genres", []) or []
+        genres_value = "|".join(parsed_genres) if isinstance(parsed_genres, list) else parsed_genres
+
+        # adapt results into expected schema
+        final_results = []
+        for index, result_row in enumerate(raw_results or [], start=1):
+            # check if the row is a Pydantic model, convert to a dict; 
+            # if it's already a dict, use as-is
+            if isinstance(result_row, BaseModel):
+                row_dict = result_row.dict()
+            elif isinstance(result_row, dict):
+                row_dict = result_row
+            else:
+                # fallback: try attribute access for known fields
+                row_dict = {
+                    "title": getattr(result_row, "title", ""),
+                    "year": getattr(result_row, "year", None),
+                    "avg_rating": getattr(result_row, "avg_rating", None),
+                    "num_ratings": getattr(result_row, "num_ratings", None),}
+                
+            
+            # read each value safely from the row dictionary
+            title_value = row_dict.get("title", "")
+            year_value = row_dict.get("year")
+            avg_rating_value = row_dict.get("avg_rating")
+            num_ratings_value = row_dict.get("num_ratings")
+
+            # append the normalized row expected by your downstream normaliser
+            final_results.append({
+                "movieId": index,                
+                "title": title_value,            
+                "year": year_value,             
+                "avg_rating": avg_rating_value,  
+                "num_ratings": num_ratings_value, 
+                "genres": genres_value or []      })
+
+        logger.info(f"Successfully completes the Query Porcessor workflow.")
+        return {
+            "intent": intent_value,
+            "slots": slots_dict,
+            "results": final_results}, raw_results

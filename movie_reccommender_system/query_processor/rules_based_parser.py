@@ -1,16 +1,14 @@
-""" Rule-based Parser
-
-Goal:
-    - detect common intents quickly
-    - extract simple slots (title, genres, year, min rating, top N)
-    - produce a ParsedQuery object for the SQL layer
-
-Note: easy conservative and easy to extend later.
-"""
-
+"""Script for Rule-based Parser"""
 import re
-from movie_reccommender_system.utilities import query_preprocessing
-from movie_reccommender_system.response_basemodel_validator.query_intent_parser_model import QueryParser
+import logging
+from movie_reccommender_system.query_processor import query_preprocessing
+from movie_reccommender_system.response_basemodel_validator.query_processor_model import QueryParser
+# basic log info 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+# deifne single logger for context builder
+logger=logging.getLogger("Query_Rule_Based_Parser")
 
 # define dict of known genres from DB
 KNOWN_GENRES = {
@@ -51,26 +49,31 @@ def user_query_parser(text: str):
         text (str): Incoming user's query text.
 
     Steps:
-        - detect TAILS if 'tell me about' or 'who directed/starred' appears
         - detect SIMILAR_MOVIES if 'movies like' appears
         - detect TOP_N if 'top N' appears
+        - RECCOMEND_BY_FILTER
         - otherwise, if genres/years/min rating present or 'recommend' present → RECOMMEND_BY_FILTER
         - else UNKNOWN
     """
     # keep original text for the model
     raw_text = text
-    # convert text lower-case
+    
+    logger.info(f"Converting text to lowercase..")
     convert_to_lowercase = query_preprocessing.covnert_text_to_lower_case(text)
-
-    # extract top n value
+    
+    logger.info(f"Collecting the TOP_N from text..")
     top_n_value = get_top_number_from_text(text)
-    # extract years (single or range)
+    
+    logger.info(f"Collecting year values from text.")
     year, year_from, year_to = get_years_from_text(text)
-    # extract minimal rating if any
-    minimal_ratings, rating_compare = get_min_rating_from_text(text)
-    # extract genres list
+    
+    logger.info(f"Collecting rating values from text.")
+    minimal_ratings, rating_compare = get_min_rating_from_text_v2(text)
+    
+    logger.info(f"Collecting generes from text.")
     genres = get_genres_from_text(text)
-    # extract a possible movie title
+    
+    logger.info(f"Collecting the title from text..")
     title = get_title_from_text(text)
 
     # check phrase 'tell me about' for details intent
@@ -369,6 +372,80 @@ def get_min_rating_from_text(text: str):
             if rating_value is not None:
                 return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
 
+    return (None, None)
+
+
+### Version 2
+def get_min_rating_from_text_v2(text: str):
+    """Find a minimal rating threshold (1..5) from user text.
+    Supports:
+      - "rating 4"
+      - "rating at least 4"
+      - "rating greater than 3"
+      - "rating less than 3.5"
+      - "min 4" / "minimum 4"
+    Returns: (rating_value, comparator) or (None, None)
+             comparator ∈ {"greater_than_or_equal", "less_than_or_equal"}
+    """
+    # make a lower-case copy
+    lower_text = query_preprocessing.covnert_text_to_lower_case(text)
+    # normalise a common join error: "atleast" -> "at least"
+    lower_text = lower_text.replace("atleast", "at least")
+    # split into words/tokens
+    word_list = query_preprocessing.split_text_into_words_corpus(lower_text)
+    # cache length for bounds checks
+    token_count = len(word_list)
+
+    # helper: clamp to 1..5
+    def clamp_1_to_5(value):
+        return max(1.0, min(5.0, value))
+
+    # patterns that begin with the word "rating"
+    for index in range(token_count):
+        # check for the token "rating"
+        if word_list[index] != "rating":
+            continue
+
+        # pattern "rating at least X"  -> >= X
+        if (index + 3 < token_count
+            and word_list[index + 1] == "at"
+            and word_list[index + 2] == "least"):
+            rating_value = query_preprocessing.parse_float_safe(word_list[index + 3])
+            if rating_value is not None:
+                return (clamp_1_to_5(rating_value), "greater_than_or_equal")
+
+        # pattern "rating greater than X" -> >= X
+        if (index + 3 < token_count
+            and word_list[index + 1] == "greater"
+            and word_list[index + 2] == "than"):
+            rating_value = query_preprocessing.parse_float_safe(word_list[index + 3])
+            if rating_value is not None:
+                return (clamp_1_to_5(rating_value), "greater_than_or_equal")
+
+        # pattern "rating less than X" -> <= X
+        if (index + 3 < token_count
+            and word_list[index + 1] == "less"
+            and word_list[index + 2] == "than"):
+            rating_value = query_preprocessing.parse_float_safe(word_list[index + 3])
+            if rating_value is not None:
+                return (clamp_1_to_5(rating_value), "less_than_or_equal")
+
+        # pattern "rating X" -> >= X
+        if index + 1 < token_count:
+            rating_value = query_preprocessing.parse_float_safe(word_list[index + 1])
+            if rating_value is not None:
+                return (clamp_1_to_5(rating_value), "greater_than_or_equal")
+
+    # patterns "min X" / "minimum X" -> >= X
+    for index in range(token_count - 1):
+        # check for "min" or "minimum"
+        if word_list[index] in ("min", "minimum"):
+            # ensure a next token exists and parse it
+            rating_value = query_preprocessing.parse_float_safe(word_list[index + 1])
+            if rating_value is not None:
+                return (clamp_1_to_5(rating_value), "greater_than_or_equal")
+
+    # return none if nothing matched
     return (None, None)
 
 

@@ -1,30 +1,102 @@
-# llm_context_builder.py
-# ----------------------------------------
-# Point 2: Extract compact context object for LLM
-# Builds summary fields from canonicalized data
-# ----------------------------------------
+""" Script to build the summary field from normlaised data from LLM Preprocessing (llm_preprocessing.py)"""
+import logging
+# basic log info 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+# deifne single logger for context builder
+logger=logging.getLogger("LLM_Context_Builder")
+
+# Extract compact context object
+def extract_compact_context(
+        normalised_data, 
+        max_filters_length=140):
+    """Function to build a compact context object from canonicalized query data.
+
+    Args:
+      normalised_data: dict returned by normalise_query_output()
+
+    Output:
+      dict with keys:
+        result_count: int
+        seed_title: str|None
+        filters_text: str|None
+        time_window: str|None
+        rating_bounds: str|None
+    """
+    # extract intent
+    intent = normalised_data.get("intent")
+    # extract slots dictionary
+    slots = normalised_data.get("slots", {})
+    # extract results list
+    results = normalised_data.get("results", [])
+
+    # count number of results
+    result_count = len(results)
+
+
+    logger.info(f"Handling the time window.")
+    time_window_text = build_time_window(slots)
+
+    logger.info(f"Handling the rating bounding phrase.")
+    rating_text = build_rating_bounds(slots)
+
+    logger.info(f"Handling the title string.")
+    seed_title = to_str_safe(slots.get("title"))
+
+    logger.info(f"Building tghe final filter text.")
+    filters_text = build_filters_text(
+        intent, 
+        slots, 
+        time_window_text, 
+        rating_text, 
+        max_length=max_filters_length)
+
+    # collect all movie titles from results
+    titles = [r.get("title") for r in results if r.get("title")]
+
+    logger.info(f"Successfully comleting the LLM Context builder tasks..")
+    return {
+        "result_count": result_count,
+        "seed_title": seed_title,
+        "filters_text": filters_text,
+        "time_window": time_window_text,
+        "rating_bounds": rating_text,
+        "titles": titles,}
+
+
 
 # Safely convert a value to string
 def to_str_safe(value):
-    """
-    Convert a value to a stripped string, return None if empty.
+    """Function to convert a value to a stripped string, return None if empty.
+
+    Args: 
+        vlaue (str): Incoming value to be stripped as string.
+
+    Returns:
+
     """
     # If input is None, return None
     if value is None:
         return None
-    # Convert to string and strip whitespace
-    s = str(value).strip()
-    # Return None if result is empty
-    return s if s else None
+    # convert to string and strip whitespace
+    stripped_str_val = str(value).strip()
+    # return None if result is empty after stripping
+    return stripped_str_val if stripped_str_val else None
 
 
-# Normalize 'genres' slot values
+# normalize 'genres' values
 def normalize_slot_genres(slots):
+    """Function to normalize 'genres' or 'genre' from slots into a list of clean strings.
+
+    Args:
+        slots (dict): slot output after query processor output.
+    
+    Returns:
+        List: containing the normalised genres 
+
     """
-    Normalize 'genres' or 'genre' from slots into a list of clean strings.
-    Supports comma or pipe separated strings, or a list.
-    """
-    # Read from either "genres" or "genre"
+    # read from either "genres" or "genre"
     raw_slot = slots.get("genres", slots.get("genre"))
     # If nothing present, return empty list
     if raw_slot is None:
@@ -43,82 +115,105 @@ def normalize_slot_genres(slots):
 
 # Build time window phrase
 def build_time_window(slots):
+    """FUnction to construct a human-readable time window phrase.
+        Examples:
+        start_year + end_year -> "between 2000 and 2010"
+        start_year only -> "since 2000"
+        end_year only -> "until 2010"
+        year only -> "in 2005"
+
+    Args: 
+        slots (dict): Containung the year values.
+
+    Returns:
+        cleanned year value for LLM context. None is no slot for year.
     """
-    Construct a human-readable time window phrase.
-    Examples:
-      start_year + end_year -> "between 2000 and 2010"
-      start_year only -> "since 2000"
-      end_year only -> "until 2010"
-      year only -> "in 2005"
-    """
-    # Read slot values
+    # read slot values
     year = slots.get("year")
     start_year = slots.get("start_year")
     end_year = slots.get("end_year")
 
-    # If both start and end provided
+    # if both start and end provided
     if start_year is not None and end_year is not None:
         return f"between {start_year} and {end_year}"
-    # If only start year provided
+    # if only start year provided
     if start_year is not None:
         return f"since {start_year}"
-    # If only end year provided
+    # if only end year provided
     if end_year is not None:
         return f"until {end_year}"
-    # If only year provided
+    # if only year provided
     if year is not None:
         return f"in {year}"
-    # If nothing provided
+    # if nothing provided
     return None
 
 
 # Build rating bounds phrase
 def build_rating_bounds(slots):
+    """Function to construct a human-readable rating constraint phrase.
+        Examples:
+        min + max -> "between 3.5 and 4.5"
+        min only -> "≥ 4.0"
+        max only -> "≤ 3.0"
+        exact rating -> "= 5.0"
+
+    Args: 
+        slots (dict): Containung the rating values.
+
+    Returns:
+        cleanned rating value for LLM context. None is no slot for rating.
     """
-    Construct a human-readable rating constraint phrase.
-    Examples:
-      min + max -> "between 3.5 and 4.5"
-      min only -> "≥ 4.0"
-      max only -> "≤ 3.0"
-      exact rating -> "= 5.0"
-    """
-    # Read slot values
+    # read slot values
     min_rating = slots.get("min_rating")
     max_rating = slots.get("max_rating")
     exact_rating = slots.get("rating")
 
-    # If exact rating provided
+    # if exact rating provided
     if exact_rating is not None:
         return f"= {round(float(exact_rating), 1)}"
-    # If both min and max provided
+    # if both min and max provided
     if min_rating is not None and max_rating is not None:
         return f"between {round(float(min_rating), 1)} and {round(float(max_rating), 1)}"
-    # If only min rating provided
+    # if only min rating provided
     if min_rating is not None:
         return f"≥ {round(float(min_rating), 1)}"
-    # If only max rating provided
+    # if only max rating provided
     if max_rating is not None:
         return f"≤ {round(float(max_rating), 1)}"
-    # Nothing provided
     return None
 
 
 # Build a combined filters text line
-def build_filters_text(intent, slots, time_window_text, rating_text, max_length=140):
+def build_filters_text(
+        intent, 
+        slots, 
+        time_window_text, 
+        rating_text, 
+        max_length=140):
+    """Function to combine filters into one short text string.
+        Order:
+        - intent hint
+        - genres
+        - time window
+        - rating bounds
+        - seed title
+
+    Args:
+        intent (str): Incoming intent such as TOP_N.
+        slots, 
+        time_window_text, 
+        rating_text,
+        max_length (int): Default to 140.
+
+    Returns:
+        text (str): combined text for LLM context.
     """
-    Combine filters into one short text string.
-    Order:
-      - intent hint
-      - genres
-      - time window
-      - rating bounds
-      - seed title
-    """
-    # Container for text pieces
+    # list to store the each text as parts
     parts = []
 
-    # Add intent hint based on type
-    if to_str_safe(intent) in {"RECOMMEND_BY_FILTER", "RECOMMEND"}:
+    # add intent hint based on type
+    if to_str_safe(intent) in {"RECOMMEND_BY_FILTER"}:
         parts.append("recommendations by filters")
     elif to_str_safe(intent) == "TOP_N":
         parts.append("top titles")
@@ -127,124 +222,124 @@ def build_filters_text(intent, slots, time_window_text, rating_text, max_length=
     elif to_str_safe(intent) == "GET_DETAILS":
         parts.append("title details")
 
-    # Add genres from slots
+    # add genres from slots
     genres_list = normalize_slot_genres(slots)
     if genres_list:
         parts.append("genres=" + ", ".join(genres_list))
 
-    # Add time window if present
+    # add time window if present
     if to_str_safe(time_window_text):
         parts.append(time_window_text)
 
-    # Add rating bounds if present
+    # add rating bounds if present
     if to_str_safe(rating_text):
         parts.append(rating_text)
 
-    # Add seed title if present
+    # add seed title if present
     seed_title = to_str_safe(slots.get("title"))
     if seed_title:
         parts.append(f'title="{seed_title}"')
 
-    # Join all parts with semicolons
+    # join all parts with semicolons
     text = "; ".join(parts)
 
-    # If too long, trim and add ellipsis
+    # if too long, trim and add ellipsis
     if len(text) > max_length:
         text = text[: max_length - 1].rstrip() + "…"
 
-    # Return final text or None
+    # return final text or None
     return text if text else None
 
 
-# Extract compact context object
-def extract_compact_context(canonical_data, max_filters_length=140):
-    """
-    Build a compact context object from canonicalized query data.
-
-    Input:
-      canonical_data: dict returned by canonicalize_query_output()
-
-    Output:
-      dict with keys:
-        result_count: int
-        seed_title: str|None
-        filters_text: str|None
-        time_window: str|None
-        rating_bounds: str|None
-    """
-    # Extract intent
-    intent = canonical_data.get("intent")
-    # Extract slots dictionary
-    slots = canonical_data.get("slots", {})
-    # Extract results list
-    results = canonical_data.get("results", [])
-
-    # Count number of results
-    result_count = len(results)
-
-    # Build human time window phrase
-    time_window_text = build_time_window(slots)
-
-    # Build human rating bounds phrase
-    rating_text = build_rating_bounds(slots)
-
-    # Extract seed title from slots if present
-    seed_title = to_str_safe(slots.get("title"))
-
-    # Build combined filters string
-    filters_text = build_filters_text(intent, slots, time_window_text, rating_text, max_length=max_filters_length)
-
-    # Collect all movie titles from results
-    titles = [r.get("title") for r in results if r.get("title")]
-
-    # Return compact context object
-    return {
-        "result_count": result_count,
-        "seed_title": seed_title,
-        "filters_text": filters_text,
-        "time_window": time_window_text,
-        "rating_bounds": rating_text,
-        "titles": titles,
-    }
 
 
 if __name__ == "__main__":
-    canonical_data={
+    # normalised_data_expected={
+    #         "intent": "TOP_N",
+    #         "slots": {
+    #             "min_rating": 4.0,
+    #             "start_year": 2000,
+    #             "end_year": 2010
+    #         },
+    #         "results": [
+    #             {
+    #                 "movieId": "1",
+    #                 "title": "The Dark Knight",
+    #                 "year": 2008,
+    #                 "avg_rating": 4.7,
+    #                 "num_ratings": 5000,
+    #                 "genres": [
+    #                     "Action",
+    #                     "Crime",
+    #                     "Drama"
+    #                 ]
+    #             },
+    #             {
+    #                 "movieId": "2",
+    #                 "title": "Inception",
+    #                 "year": 2010,
+    #                 "avg_rating": 4.6,
+    #                 "num_ratings": 4500,
+    #                 "genres": [
+    #                     "Action",
+    #                     "Sci-Fi",
+    #                     "Thriller"
+    #                 ]
+    #             }
+    #         ]
+    #     }
+
+    query_executor = {
             "intent": "TOP_N",
             "slots": {
-                "min_rating": 4.0,
-                "start_year": 2000,
-                "end_year": 2010
+                "start_year": "1998"
             },
             "results": [
                 {
-                    "movieId": "1",
-                    "title": "The Dark Knight",
-                    "year": 2008,
-                    "avg_rating": 4.7,
-                    "num_ratings": 5000,
-                    "genres": [
-                        "Action",
-                        "Crime",
-                        "Drama"
-                    ]
+                    "movieId": 1,
+                    "title": "Tokyo Fist (1995)",
+                    "year": 1998,
+                    "avg_rating": 4.0,
+                    "num_ratings": 1,
+                    "genres": "Action"
                 },
                 {
-                    "movieId": "2",
-                    "title": "Inception",
-                    "year": 2010,
-                    "avg_rating": 4.6,
-                    "num_ratings": 4500,
-                    "genres": [
-                        "Action",
-                        "Sci-Fi",
-                        "Thriller"
-                    ]
+                    "movieId": 2,
+                    "title": "Men With Guns (1997)",
+                    "year": 1998,
+                    "avg_rating": 3.5,
+                    "num_ratings": 2,
+                    "genres": "Action"
+                },
+                {
+                    "movieId": 3,
+                    "title": "Mercury Rising (1998)",
+                    "year": 1998,
+                    "avg_rating": 3.429,
+                    "num_ratings": 7,
+                    "genres": "Action"
+                },
+                {
+                    "movieId": 4,
+                    "title": "Man in the Iron Mask, The (1998)",
+                    "year": 1998,
+                    "avg_rating": 3.417,
+                    "num_ratings": 12,
+                    "genres": "Action"
+                },
+                {
+                    "movieId": 5,
+                    "title": "Replacement Killers, The (1998)",
+                    "year": 1998,
+                    "avg_rating": 3.308,
+                    "num_ratings": 39,
+                    "genres": "Action"
                 }
             ]
         }
+
     
     import json
-    response= extract_compact_context(canonical_data, max_filters_length=140)
-    print("response: \n", response)
-    # print("response: \n", json.dumps(response, indent=4))
+    response= extract_compact_context(query_executor, max_filters_length=140)
+    # print("response: \n", response)
+    print("response: \n", json.dumps(response, indent=4, ensure_ascii=False))
