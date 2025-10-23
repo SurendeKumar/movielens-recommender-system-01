@@ -10,10 +10,10 @@ logging.basicConfig(
     level=logging.INFO,  
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
 # logger for this router
-logger = logging.getLogger("query_processor_api")
+logger = logging.getLogger("Quer_Processor_API")
 
 # initialise the router
-router = APIRouter(tags=["query-processing"])
+router = APIRouter(tags=["QUERY_PROCESSOR"])
 # read db path (use same env as ingestion)
 DB_PATH = os.getenv("SQLITE_DB_PATH", "./movie_reccommender_system/db/movies.db")
 # initiate the query processor class
@@ -39,7 +39,7 @@ def api_parse(req: query_processor_model.ParseRequest):
 @router.post(
         "/query/execute", 
         response_model=query_processor_model.ExecutePreparedResponse)
-def api_execute(req: query_processor_model.ExecuteRequest):
+def api_query_executor(req: query_processor_model.ExecuteRequest):
     """ Parse the user text, then run a structured SQL retrieval."""
     logger.info(f"Received /query/execute request -> text: {req.text}, limit: {req.limit}")
     # parse first
@@ -48,11 +48,6 @@ def api_execute(req: query_processor_model.ExecuteRequest):
    
     # trigger main dispatcher - movie_row variable if we want to check full results
     query_processor_output, _=queryProcessor.query_executor_output_handler(parsed, limit=10)
-    # return both the parse and results after query processor
-    # return query_intent_parser_model.ExecuteResponse(
-        # parsed=parsed,
-        # results=movie_row,
-        # prepared=query_processor_output)
 
     # return final preprared results for LLM inference
     return query_processor_model.ExecutePreparedResponse(**query_processor_output)

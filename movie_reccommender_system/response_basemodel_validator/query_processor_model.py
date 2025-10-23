@@ -1,5 +1,5 @@
 """Pydantic basemodel for user intent and slots for rule based parser."""
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, computed_field
 from typing import List, Optional, Literal, Dict, Any
 
 
@@ -80,6 +80,16 @@ class ExecuteRequest(BaseModel):
 
     # optional limit override
     limit: int=Field(10, ge=1, le=50, description="Max rows to return (1..50).")
+
+
+# compute top_n field if required
+class ExecuteParsedRequest(BaseModel):
+    text: str
+    limit: int = Field(10, ge=1, le=50)
+
+    @computed_field
+    def top_n(self) -> int:
+        return self.limit
 
 
 # movie record basemodel

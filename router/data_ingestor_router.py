@@ -14,10 +14,10 @@ logging.basicConfig(
     level=logging.INFO,  
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
 # logger for this router
-logger = logging.getLogger("data_ingestor_api")
+logger = logging.getLogger("Data_Ingestor_API")
 
 # set up router
-router = APIRouter(tags=["movielens-data-ingestion"])
+router = APIRouter(tags=["DATA_INGESTOR"])
 
 # read paths from env or use defaults
 DATA_PATH = os.getenv("MOVIELENS_DATA_PATH", "./movie_reccommender_system/data_raw")
@@ -82,8 +82,8 @@ def ingest_movie_stats_only():
         response_model=data_ingestor_model.MovieLensIgenstorResponse)
 def ingest_full():
     """
-    - Run the whole ingestion flow in the right order. 
-    - POST because it mutates the DB.
+        - Run the whole ingestion flow in the right order. 
+        - POST because it mutates the DB.
     """
     logger.info(f"Starting /ingest/data-ingestor..")
     result = DataIngestor.run_data_ingestor()

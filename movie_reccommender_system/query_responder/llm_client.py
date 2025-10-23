@@ -6,11 +6,11 @@ import logging
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 from transformers import pipeline
-from llm_preprocessing import normalise_query_output
-from llm_context_builder import extract_compact_context
-from llm_edgecase_handling import apply_edgecase_handling
-from llm_prompt_builder import make_facts_lines, build_llm_prompt
-from llm_conversational_renderer import render_conversational_answer
+from movie_reccommender_system.query_responder.llm_preprocessing import normalise_query_output
+from movie_reccommender_system.query_responder.llm_context_builder import extract_compact_context
+from movie_reccommender_system.query_responder.llm_edgecase_handling import apply_edgecase_handling
+from movie_reccommender_system.query_responder.llm_prompt_builder import make_facts_lines, build_llm_prompt
+from movie_reccommender_system.query_responder.llm_conversational_renderer import render_conversational_answer
 from movie_reccommender_system.response_basemodel_validator import llm_response_model
 # basic log info 
 logging.basicConfig(
@@ -70,7 +70,7 @@ def generate_query_response(req: llm_response_model.AnswerRequest):
         tone="concise", 
         max_items=5)
 
-    # Build the final response
+    # build the final response
     response = llm_response_model.AnswerResponse(
         intent=intent,
         slots=slots,
