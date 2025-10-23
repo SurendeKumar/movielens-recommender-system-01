@@ -147,150 +147,150 @@ def make_facts_lines(
 
 
 
-if __name__ == "__main__": 
+# if __name__ == "__main__": 
 
-    from llm_preprocessing import normalise_query_output
-    from llm_context_builder import extract_compact_context
-    from llm_prompt_builder import build_llm_prompt
-    import json
+#     from llm_preprocessing import normalise_query_output
+#     from llm_context_builder import extract_compact_context
+#     from llm_prompt_builder import build_llm_prompt
+#     import json
 
-    # # Step 1: Sample canonical_data input (raw query executor output)
-    # raw_data = {
-    #     "intent": "TOP_N",
-    #     "slots": {
-    #         "min_rating": "4.0",
-    #         "start_year": "2000",
-    #         "end_year": "2010"
-    #     },
-    #     "results": [
-    #         {
-    #             "movieId": 1,
-    #             "title": "The Dark Knight",
-    #             "year": "2008",
-    #             "avg_rating": "4.7",
-    #             "num_ratings": "5000",
-    #             "genres": "Action|Crime|Drama"
-    #         },
-    #         {
-    #             "movieId": 2,
-    #             "title": "Inception",
-    #             "year": "2010",
-    #             "avg_rating": "4.6",
-    #             "num_ratings": "4500",
-    #             "genres": ["Action", "Sci-Fi", "Thriller"]
-    #         }
-    #     ]
-    # }
+#     # # Step 1: Sample canonical_data input (raw query executor output)
+#     # raw_data = {
+#     #     "intent": "TOP_N",
+#     #     "slots": {
+#     #         "min_rating": "4.0",
+#     #         "start_year": "2000",
+#     #         "end_year": "2010"
+#     #     },
+#     #     "results": [
+#     #         {
+#     #             "movieId": 1,
+#     #             "title": "The Dark Knight",
+#     #             "year": "2008",
+#     #             "avg_rating": "4.7",
+#     #             "num_ratings": "5000",
+#     #             "genres": "Action|Crime|Drama"
+#     #         },
+#     #         {
+#     #             "movieId": 2,
+#     #             "title": "Inception",
+#     #             "year": "2010",
+#     #             "avg_rating": "4.6",
+#     #             "num_ratings": "4500",
+#     #             "genres": ["Action", "Sci-Fi", "Thriller"]
+#     #         }
+#     #     ]
+#     # }
 
-    # # Step 2: Canonicalize the raw data (Point 1)
-    # normalised_data = normalise_query_output(raw_data)
+#     # # Step 2: Canonicalize the raw data (Point 1)
+#     # normalised_data = normalise_query_output(raw_data)
 
-    normalised_data={
-            "intent": "TOP_N",
-            "slots": {
-                "start_year": 1998
-            },
-            "results": [
-                {
-                    "movieId": "1",
-                    "title": "Tokyo Fist (1995)",
-                    "year": 1998,
-                    "avg_rating": 4.0,
-                    "num_ratings": 1,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "2",
-                    "title": "Men With Guns (1997)",
-                    "year": 1998,
-                    "avg_rating": 3.5,
-                    "num_ratings": 2,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "3",
-                    "title": "Mercury Rising (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.429,
-                    "num_ratings": 7,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "4",
-                    "title": "Man in the Iron Mask, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.417,
-                    "num_ratings": 12,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "5",
-                    "title": "Replacement Killers, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.308,
-                    "num_ratings": 39,
-                    "genres": [
-                        "Action"
-                    ]
-                }
-            ]
-        }
+#     normalised_data={
+#             "intent": "TOP_N",
+#             "slots": {
+#                 "start_year": 1998
+#             },
+#             "results": [
+#                 {
+#                     "movieId": "1",
+#                     "title": "Tokyo Fist (1995)",
+#                     "year": 1998,
+#                     "avg_rating": 4.0,
+#                     "num_ratings": 1,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "2",
+#                     "title": "Men With Guns (1997)",
+#                     "year": 1998,
+#                     "avg_rating": 3.5,
+#                     "num_ratings": 2,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "3",
+#                     "title": "Mercury Rising (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.429,
+#                     "num_ratings": 7,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "4",
+#                     "title": "Man in the Iron Mask, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.417,
+#                     "num_ratings": 12,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "5",
+#                     "title": "Replacement Killers, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.308,
+#                     "num_ratings": 39,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 }
+#             ]
+#         }
 
-    # # Step 3: Extract compact context (Point 2)
-    # context = extract_compact_context(normalised_data)
+#     # # Step 3: Extract compact context (Point 2)
+#     # context = extract_compact_context(normalised_data)
 
-    context_builder_response={
-        "result_count": 5,
-        "seed_title": None,
-        "filters_text": "top titles; since 1998",
-        "time_window": "since 1998",
-        "rating_bounds": None,
-        "titles": [
-            "Tokyo Fist (1995)",
-            "Men With Guns (1997)",
-            "Mercury Rising (1998)",
-            "Man in the Iron Mask, The (1998)",
-            "Replacement Killers, The (1998)"
-        ]
-    }
+#     context_builder_response={
+#         "result_count": 5,
+#         "seed_title": None,
+#         "filters_text": "top titles; since 1998",
+#         "time_window": "since 1998",
+#         "rating_bounds": None,
+#         "titles": [
+#             "Tokyo Fist (1995)",
+#             "Men With Guns (1997)",
+#             "Mercury Rising (1998)",
+#             "Man in the Iron Mask, The (1998)",
+#             "Replacement Killers, The (1998)"
+#         ]
+#     }
 
-    # Step 4: Build the LLM prompt (Point 3)
-    prompt = build_llm_prompt(
-        context_builder_response, 
-        normalised_data["results"], 
-        tone="concise", 
-        max_items=5)
+#     # Step 4: Build the LLM prompt (Point 3)
+#     prompt = build_llm_prompt(
+#         context_builder_response, 
+#         normalised_data["results"], 
+#         tone="concise", 
+#         max_items=5)
 
-    # Print the pieces
-    print("=== Canonical Data ===")
-    print(json.dumps(normalised_data, indent=4))
+#     # Print the pieces
+#     print("=== Canonical Data ===")
+#     print(json.dumps(normalised_data, indent=4))
 
-    print("\n=== Context ===")
-    print(json.dumps(context_builder_response, indent=4))
+#     print("\n=== Context ===")
+#     print(json.dumps(context_builder_response, indent=4))
 
-    print("\n=== LLM Prompt ===")
-    print(prompt)
+#     print("\n=== LLM Prompt ===")
+#     print(prompt)
 
-    prompt_builder_output="""
-        === LLM Prompt ===
-        You are a helpful movie assistant. Answer using only the facts provided. Do not invent movies or data.
-        Context: top titles; since 1998
-        Found: 5 result(s).
-        Titles: Tokyo Fist (1995), Men With Guns (1997), Mercury Rising (1998), Man in the Iron Mask, The (1998), Replacement Killers, The (1998)
-        Facts:
-        • Tokyo Fist (1995) (1998) — 4.0/5 — 1 ratings — [Action]
-        • Men With Guns (1997) (1998) — 3.5/5 — 2 ratings — [Action]
-        • Mercury Rising (1998) (1998) — 3.4/5 — 7 ratings — [Action]
-        • Man in the Iron Mask, The (1998) (1998) — 3.4/5 — 12 ratings — [Action]
-        • Replacement Killers, The (1998) (1998) — 3.3/5 — 39 ratings — [Action]
-        Task: Write a short, concise response that summarizes these results for the user. If there are no results, say that politely and suggest broadening the filters.
+#     prompt_builder_output="""
+#         === LLM Prompt ===
+#         You are a helpful movie assistant. Answer using only the facts provided. Do not invent movies or data.
+#         Context: top titles; since 1998
+#         Found: 5 result(s).
+#         Titles: Tokyo Fist (1995), Men With Guns (1997), Mercury Rising (1998), Man in the Iron Mask, The (1998), Replacement Killers, The (1998)
+#         Facts:
+#         • Tokyo Fist (1995) (1998) — 4.0/5 — 1 ratings — [Action]
+#         • Men With Guns (1997) (1998) — 3.5/5 — 2 ratings — [Action]
+#         • Mercury Rising (1998) (1998) — 3.4/5 — 7 ratings — [Action]
+#         • Man in the Iron Mask, The (1998) (1998) — 3.4/5 — 12 ratings — [Action]
+#         • Replacement Killers, The (1998) (1998) — 3.3/5 — 39 ratings — [Action]
+#         Task: Write a short, concise response that summarizes these results for the user. If there are no results, say that politely and suggest broadening the filters.
 
-        """
+#         """

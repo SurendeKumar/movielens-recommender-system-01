@@ -253,93 +253,93 @@ def build_filters_text(
 
 
 
-if __name__ == "__main__":
-    # normalised_data_expected={
-    #         "intent": "TOP_N",
-    #         "slots": {
-    #             "min_rating": 4.0,
-    #             "start_year": 2000,
-    #             "end_year": 2010
-    #         },
-    #         "results": [
-    #             {
-    #                 "movieId": "1",
-    #                 "title": "The Dark Knight",
-    #                 "year": 2008,
-    #                 "avg_rating": 4.7,
-    #                 "num_ratings": 5000,
-    #                 "genres": [
-    #                     "Action",
-    #                     "Crime",
-    #                     "Drama"
-    #                 ]
-    #             },
-    #             {
-    #                 "movieId": "2",
-    #                 "title": "Inception",
-    #                 "year": 2010,
-    #                 "avg_rating": 4.6,
-    #                 "num_ratings": 4500,
-    #                 "genres": [
-    #                     "Action",
-    #                     "Sci-Fi",
-    #                     "Thriller"
-    #                 ]
-    #             }
-    #         ]
-    #     }
+# if __name__ == "__main__":
+#     # normalised_data_expected={
+#     #         "intent": "TOP_N",
+#     #         "slots": {
+#     #             "min_rating": 4.0,
+#     #             "start_year": 2000,
+#     #             "end_year": 2010
+#     #         },
+#     #         "results": [
+#     #             {
+#     #                 "movieId": "1",
+#     #                 "title": "The Dark Knight",
+#     #                 "year": 2008,
+#     #                 "avg_rating": 4.7,
+#     #                 "num_ratings": 5000,
+#     #                 "genres": [
+#     #                     "Action",
+#     #                     "Crime",
+#     #                     "Drama"
+#     #                 ]
+#     #             },
+#     #             {
+#     #                 "movieId": "2",
+#     #                 "title": "Inception",
+#     #                 "year": 2010,
+#     #                 "avg_rating": 4.6,
+#     #                 "num_ratings": 4500,
+#     #                 "genres": [
+#     #                     "Action",
+#     #                     "Sci-Fi",
+#     #                     "Thriller"
+#     #                 ]
+#     #             }
+#     #         ]
+#     #     }
 
-    query_executor = {
-            "intent": "TOP_N",
-            "slots": {
-                "start_year": "1998"
-            },
-            "results": [
-                {
-                    "movieId": 1,
-                    "title": "Tokyo Fist (1995)",
-                    "year": 1998,
-                    "avg_rating": 4.0,
-                    "num_ratings": 1,
-                    "genres": "Action"
-                },
-                {
-                    "movieId": 2,
-                    "title": "Men With Guns (1997)",
-                    "year": 1998,
-                    "avg_rating": 3.5,
-                    "num_ratings": 2,
-                    "genres": "Action"
-                },
-                {
-                    "movieId": 3,
-                    "title": "Mercury Rising (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.429,
-                    "num_ratings": 7,
-                    "genres": "Action"
-                },
-                {
-                    "movieId": 4,
-                    "title": "Man in the Iron Mask, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.417,
-                    "num_ratings": 12,
-                    "genres": "Action"
-                },
-                {
-                    "movieId": 5,
-                    "title": "Replacement Killers, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.308,
-                    "num_ratings": 39,
-                    "genres": "Action"
-                }
-            ]
-        }
+#     query_executor = {
+#             "intent": "TOP_N",
+#             "slots": {
+#                 "start_year": "1998"
+#             },
+#             "results": [
+#                 {
+#                     "movieId": 1,
+#                     "title": "Tokyo Fist (1995)",
+#                     "year": 1998,
+#                     "avg_rating": 4.0,
+#                     "num_ratings": 1,
+#                     "genres": "Action"
+#                 },
+#                 {
+#                     "movieId": 2,
+#                     "title": "Men With Guns (1997)",
+#                     "year": 1998,
+#                     "avg_rating": 3.5,
+#                     "num_ratings": 2,
+#                     "genres": "Action"
+#                 },
+#                 {
+#                     "movieId": 3,
+#                     "title": "Mercury Rising (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.429,
+#                     "num_ratings": 7,
+#                     "genres": "Action"
+#                 },
+#                 {
+#                     "movieId": 4,
+#                     "title": "Man in the Iron Mask, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.417,
+#                     "num_ratings": 12,
+#                     "genres": "Action"
+#                 },
+#                 {
+#                     "movieId": 5,
+#                     "title": "Replacement Killers, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.308,
+#                     "num_ratings": 39,
+#                     "genres": "Action"
+#                 }
+#             ]
+#         }
 
     
-    import json
-    response= extract_compact_context(query_executor, max_filters_length=140)
-    # print("response: \n", response)
-    print("response: \n", json.dumps(response, indent=4, ensure_ascii=False))
+#     import json
+#     response= extract_compact_context(query_executor, max_filters_length=140)
+#     # print("response: \n", response)
+#     print("response: \n", json.dumps(response, indent=4, ensure_ascii=False))

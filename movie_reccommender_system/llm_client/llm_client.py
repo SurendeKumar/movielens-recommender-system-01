@@ -87,87 +87,87 @@ def generate_query_response(req: llm_response_model.AnswerRequest):
 
 
 
-# Allow running as a script for quick local testing
-if __name__ == "__main__":
-    # URL - model_id=https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct
-    # HUGGINGFACE_MODEL_ID="meta-llama/Llama-3.2-1B-Instruct"
-    HUGGINGFACE_MODEL_ID_3B="meta-llama/Llama-3.2-3B-Instruct"
-    HUGGINGFACE_HUB_TOKEN="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"
-    # Build a small sample executor payload
-    # sample_payload = {
-    #     "intent": "TOP_N",
-    #     "slots": {"min_rating": "4.0", "start_year": "2000", "end_year": "2010"},
-    #     "results": [
-    #         {"movieId": 1, "title": "The Dark Knight", "year": "2008", "avg_rating": "4.7", "num_ratings": "5000", "genres": "Action|Crime|Drama"},
-    #         {"movieId": 2, "title": "Inception", "year": "2010", "avg_rating": "4.6", "num_ratings": "4500", "genres": ["Action", "Sci-Fi", "Thriller"]}
-    #     ]
-    # }
+# # Allow running as a script for quick local testing
+# if __name__ == "__main__":
+#     # URL - model_id=https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct
+#     # HUGGINGFACE_MODEL_ID="meta-llama/Llama-3.2-1B-Instruct"
+#     HUGGINGFACE_MODEL_ID_3B="meta-llama/Llama-3.2-3B-Instruct"
+#     HUGGINGFACE_HUB_TOKEN="hf_xxxxx"
+#     # Build a small sample executor payload
+#     # sample_payload = {
+#     #     "intent": "TOP_N",
+#     #     "slots": {"min_rating": "4.0", "start_year": "2000", "end_year": "2010"},
+#     #     "results": [
+#     #         {"movieId": 1, "title": "The Dark Knight", "year": "2008", "avg_rating": "4.7", "num_ratings": "5000", "genres": "Action|Crime|Drama"},
+#     #         {"movieId": 2, "title": "Inception", "year": "2010", "avg_rating": "4.6", "num_ratings": "4500", "genres": ["Action", "Sci-Fi", "Thriller"]}
+#     #     ]
+#     # }
 
-    sample_payload = {
-            "intent": "TOP_N",
-            "slots": {
-                "start_year": 1998
-            },
-            "results": [
-                {
-                    "movieId": "1",
-                    "title": "Tokyo Fist (1995)",
-                    "year": 1998,
-                    "avg_rating": 4.0,
-                    "num_ratings": 1,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "2",
-                    "title": "Men With Guns (1997)",
-                    "year": 1998,
-                    "avg_rating": 3.5,
-                    "num_ratings": 2,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "3",
-                    "title": "Mercury Rising (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.429,
-                    "num_ratings": 7,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "4",
-                    "title": "Man in the Iron Mask, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.417,
-                    "num_ratings": 12,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "5",
-                    "title": "Replacement Killers, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.308,
-                    "num_ratings": 39,
-                    "genres": [
-                        "Action"
-                    ]
-                }
-            ]
-        }
-    # create a request object
-    req = llm_response_model.AnswerRequest(
-        executor_payload=sample_payload, 
-        max_results=5, 
-        tone="concise",
-        diversify=True)
-    # run the pipeline
-    res = generate_query_response(req)
-    # Print the output with Unicode preserved (no \u escapes) and pretty formatting
-    print(json.dumps(res.model_dump(), indent=4, ensure_ascii=False))
+#     sample_payload = {
+#             "intent": "TOP_N",
+#             "slots": {
+#                 "start_year": 1998
+#             },
+#             "results": [
+#                 {
+#                     "movieId": "1",
+#                     "title": "Tokyo Fist (1995)",
+#                     "year": 1998,
+#                     "avg_rating": 4.0,
+#                     "num_ratings": 1,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "2",
+#                     "title": "Men With Guns (1997)",
+#                     "year": 1998,
+#                     "avg_rating": 3.5,
+#                     "num_ratings": 2,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "3",
+#                     "title": "Mercury Rising (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.429,
+#                     "num_ratings": 7,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "4",
+#                     "title": "Man in the Iron Mask, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.417,
+#                     "num_ratings": 12,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "5",
+#                     "title": "Replacement Killers, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.308,
+#                     "num_ratings": 39,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 }
+#             ]
+#         }
+#     # create a request object
+#     req = llm_response_model.AnswerRequest(
+#         executor_payload=sample_payload, 
+#         max_results=5, 
+#         tone="concise",
+#         diversify=True)
+#     # run the pipeline
+#     res = generate_query_response(req)
+#     # Print the output with Unicode preserved (no \u escapes) and pretty formatting
+#     print(json.dumps(res.model_dump(), indent=4, ensure_ascii=False))

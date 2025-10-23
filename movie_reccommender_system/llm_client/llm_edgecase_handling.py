@@ -357,207 +357,207 @@ def annotate_context(
 
 
 
-if __name__ == "__main__":
-    import json
-    from llm_preprocessing import normalise_query_output
-    from llm_context_builder import extract_compact_context
+# if __name__ == "__main__":
+#     import json
+#     from llm_preprocessing import normalise_query_output
+#     from llm_context_builder import extract_compact_context
 
-      # # -------- Scenario 1: Overflow → diversify and cap --------
-    # manually created build raw data with many results to trigger overflow handling
-    raw_data_overflow = {
-        "intent": "TOP_N",
-        "slots": {
-            "min_rating": "3.5",
-            "start_year": "2000",
-            "end_year": "2010",
-            "genres": "Action, Drama, Sci-Fi"
-        },
-        "results": [
-            # Action-heavy group
-            {"movieId": 1, "title": "The Dark Knight", "year": "2008", "avg_rating": "4.7", "num_ratings": "5000", "genres": "Action|Crime|Drama"},
-            {"movieId": 2, "title": "Inception", "year": "2010", "avg_rating": "4.6", "num_ratings": "4500", "genres": ["Action", "Sci-Fi", "Thriller"]},
-            {"movieId": 3, "title": "Mad Max: Fury Road", "year": "2015", "avg_rating": "4.5", "num_ratings": "3000", "genres": "Action|Adventure|Sci-Fi"},
-            # Drama group
-            {"movieId": 4, "title": "The Social Network", "year": "2010", "avg_rating": "4.2", "num_ratings": "2500", "genres": ["Drama"]},
-            {"movieId": 5, "title": "There Will Be Blood", "year": "2007", "avg_rating": "4.3", "num_ratings": "2200", "genres": "Drama"},
-            # Sci-Fi group
-            {"movieId": 6, "title": "District 9", "year": "2009", "avg_rating": "4.1", "num_ratings": "2000", "genres": "Sci-Fi|Thriller"},
-            {"movieId": 7, "title": "Moon", "year": "2009", "avg_rating": "4.0", "num_ratings": "1200", "genres": ["Sci-Fi", "Drama"]},
-            # Unknown genre fallback
-            {"movieId": 8, "title": "Unknown Indie", "year": "2008", "avg_rating": "3.9", "num_ratings": "90", "genres": []}
-        ]
-    }
+#       # # -------- Scenario 1: Overflow → diversify and cap --------
+#     # manually created build raw data with many results to trigger overflow handling
+#     raw_data_overflow = {
+#         "intent": "TOP_N",
+#         "slots": {
+#             "min_rating": "3.5",
+#             "start_year": "2000",
+#             "end_year": "2010",
+#             "genres": "Action, Drama, Sci-Fi"
+#         },
+#         "results": [
+#             # Action-heavy group
+#             {"movieId": 1, "title": "The Dark Knight", "year": "2008", "avg_rating": "4.7", "num_ratings": "5000", "genres": "Action|Crime|Drama"},
+#             {"movieId": 2, "title": "Inception", "year": "2010", "avg_rating": "4.6", "num_ratings": "4500", "genres": ["Action", "Sci-Fi", "Thriller"]},
+#             {"movieId": 3, "title": "Mad Max: Fury Road", "year": "2015", "avg_rating": "4.5", "num_ratings": "3000", "genres": "Action|Adventure|Sci-Fi"},
+#             # Drama group
+#             {"movieId": 4, "title": "The Social Network", "year": "2010", "avg_rating": "4.2", "num_ratings": "2500", "genres": ["Drama"]},
+#             {"movieId": 5, "title": "There Will Be Blood", "year": "2007", "avg_rating": "4.3", "num_ratings": "2200", "genres": "Drama"},
+#             # Sci-Fi group
+#             {"movieId": 6, "title": "District 9", "year": "2009", "avg_rating": "4.1", "num_ratings": "2000", "genres": "Sci-Fi|Thriller"},
+#             {"movieId": 7, "title": "Moon", "year": "2009", "avg_rating": "4.0", "num_ratings": "1200", "genres": ["Sci-Fi", "Drama"]},
+#             # Unknown genre fallback
+#             {"movieId": 8, "title": "Unknown Indie", "year": "2008", "avg_rating": "3.9", "num_ratings": "90", "genres": []}
+#         ]
+#     }
 
-    # normalised data the overflow data
-    # normalised_data = normalise_query_output(raw_data_overflow)
-    normalised_data={
-            "intent": "TOP_N",
-            "slots": {
-                "start_year": 1998
-            },
-            "results": [
-                {
-                    "movieId": "1",
-                    "title": "Tokyo Fist (1995)",
-                    "year": 1998,
-                    "avg_rating": 4.0,
-                    "num_ratings": 1,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "2",
-                    "title": "Men With Guns (1997)",
-                    "year": 1998,
-                    "avg_rating": 3.5,
-                    "num_ratings": 2,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "3",
-                    "title": "Mercury Rising (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.429,
-                    "num_ratings": 7,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "4",
-                    "title": "Man in the Iron Mask, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.417,
-                    "num_ratings": 12,
-                    "genres": [
-                        "Action"
-                    ]
-                },
-                {
-                    "movieId": "5",
-                    "title": "Replacement Killers, The (1998)",
-                    "year": 1998,
-                    "avg_rating": 3.308,
-                    "num_ratings": 39,
-                    "genres": [
-                        "Action"
-                    ]
-                }
-            ]
-        }
+#     # normalised data the overflow data
+#     # normalised_data = normalise_query_output(raw_data_overflow)
+#     normalised_data={
+#             "intent": "TOP_N",
+#             "slots": {
+#                 "start_year": 1998
+#             },
+#             "results": [
+#                 {
+#                     "movieId": "1",
+#                     "title": "Tokyo Fist (1995)",
+#                     "year": 1998,
+#                     "avg_rating": 4.0,
+#                     "num_ratings": 1,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "2",
+#                     "title": "Men With Guns (1997)",
+#                     "year": 1998,
+#                     "avg_rating": 3.5,
+#                     "num_ratings": 2,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "3",
+#                     "title": "Mercury Rising (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.429,
+#                     "num_ratings": 7,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "4",
+#                     "title": "Man in the Iron Mask, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.417,
+#                     "num_ratings": 12,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 },
+#                 {
+#                     "movieId": "5",
+#                     "title": "Replacement Killers, The (1998)",
+#                     "year": 1998,
+#                     "avg_rating": 3.308,
+#                     "num_ratings": 39,
+#                     "genres": [
+#                         "Action"
+#                     ]
+#                 }
+#             ]
+#         }
 
-    # build compact context
-    # context_overflow = extract_compact_context(normalised_data, max_filters_length=140)
-    context_overflow={
-        "result_count": 5,
-        "seed_title": None,
-        "filters_text": "top titles; since 1998",
-        "time_window": "since 1998",
-        "rating_bounds": None,
-        "titles": [
-            "Tokyo Fist (1995)",
-            "Men With Guns (1997)",
-            "Mercury Rising (1998)",
-            "Man in the Iron Mask, The (1998)",
-            "Replacement Killers, The (1998)"
-        ]
-    }
+#     # build compact context
+#     # context_overflow = extract_compact_context(normalised_data, max_filters_length=140)
+#     context_overflow={
+#         "result_count": 5,
+#         "seed_title": None,
+#         "filters_text": "top titles; since 1998",
+#         "time_window": "since 1998",
+#         "rating_bounds": None,
+#         "titles": [
+#             "Tokyo Fist (1995)",
+#             "Men With Guns (1997)",
+#             "Mercury Rising (1998)",
+#             "Man in the Iron Mask, The (1998)",
+#             "Replacement Killers, The (1998)"
+#         ]
+#     }
 
 
-    # Apply edge handling with a cap of 5 and diversification ON
-    updated_canonical_overflow, updated_context_overflow = apply_edgecase_handling(
-        normalised_data,
-        context_overflow,
-        max_results=5,
-        min_count_threshold=50,
-        diversify=True
-    )
+#     # Apply edge handling with a cap of 5 and diversification ON
+#     updated_canonical_overflow, updated_context_overflow = apply_edgecase_handling(
+#         normalised_data,
+#         context_overflow,
+#         max_results=5,
+#         min_count_threshold=50,
+#         diversify=True
+#     )
 
-    # Print results for scenario 1
-    print("\n=== Scenario 1: Overflow → diversify and cap ===")
-    print("\nOriginal count:", len(normalised_data["results"]))
-    print("Updated count:", len(updated_canonical_overflow["results"]))
-    print("\nUpdated Context:")
-    print(json.dumps(updated_context_overflow, indent=4))
-    print("\nUpdated Results (titles only):")
-    print([r["title"] for r in updated_canonical_overflow["results"]])
+#     # Print results for scenario 1
+#     print("\n=== Scenario 1: Overflow → diversify and cap ===")
+#     print("\nOriginal count:", len(normalised_data["results"]))
+#     print("Updated count:", len(updated_canonical_overflow["results"]))
+#     print("\nUpdated Context:")
+#     print(json.dumps(updated_context_overflow, indent=4))
+#     print("\nUpdated Results (titles only):")
+#     print([r["title"] for r in updated_canonical_overflow["results"]])
     
 
 
-    # # -------- Scenario 2: No results → suggestions --------
+#     # # -------- Scenario 2: No results → suggestions --------
 
-    # # Build raw data with empty results to trigger suggestions
-    # raw_data_no_results = {
-    #     "intent": "RECOMMEND_BY_FILTER",
-    #     "slots": {
-    #         "min_rating": "4.8",
-    #         "start_year": "2020",
-    #         "end_year": "2021",
-    #         "genres": "Historical, Documentary"
-    #     },
-    #     "results": []
-    # }
+#     # # Build raw data with empty results to trigger suggestions
+#     # raw_data_no_results = {
+#     #     "intent": "RECOMMEND_BY_FILTER",
+#     #     "slots": {
+#     #         "min_rating": "4.8",
+#     #         "start_year": "2020",
+#     #         "end_year": "2021",
+#     #         "genres": "Historical, Documentary"
+#     #     },
+#     #     "results": []
+#     # }
 
-    # # Canonicalize the no-results data
-    # normalised_data_no_results = normalise_query_output(raw_data_no_results)
+#     # # Canonicalize the no-results data
+#     # normalised_data_no_results = normalise_query_output(raw_data_no_results)
 
-    # # Build compact context
-    # context_no_results = extract_compact_context(normalised_data_no_results, max_filters_length=140)
+#     # # Build compact context
+#     # context_no_results = extract_compact_context(normalised_data_no_results, max_filters_length=140)
 
-    # # Apply edge handling (suggestions should appear)
-    # updated_normalised_data_no_results, updated_context_no_results = apply_edgecase_handling(
-    #     normalised_data_no_results,
-    #     context_no_results,
-    #     max_results=5,
-    #     min_count_threshold=50,
-    #     diversify=True
-    # )
+#     # # Apply edge handling (suggestions should appear)
+#     # updated_normalised_data_no_results, updated_context_no_results = apply_edgecase_handling(
+#     #     normalised_data_no_results,
+#     #     context_no_results,
+#     #     max_results=5,
+#     #     min_count_threshold=50,
+#     #     diversify=True
+#     # )
 
-    # # Print results for scenario 2
-    # print("\n=== Scenario 2: No results → suggestions ===")
-    # print("\nUpdated Context:")
-    # print(json.dumps(updated_context_no_results, indent=4))
-    # print("\nUpdated Results:")
-    # print(json.dumps(normalised_data_no_results["results"], indent=4))
+#     # # Print results for scenario 2
+#     # print("\n=== Scenario 2: No results → suggestions ===")
+#     # print("\nUpdated Context:")
+#     # print(json.dumps(updated_context_no_results, indent=4))
+#     # print("\nUpdated Results:")
+#     # print(json.dumps(normalised_data_no_results["results"], indent=4))
 
-    # # -------- Scenario 3: Sparse quality (low num_ratings) --------
+#     # # -------- Scenario 3: Sparse quality (low num_ratings) --------
 
-    # # Build raw data where many items have very low ratings count
-    # raw_data_sparse_quality = {
-    #     "intent": "GET_DETAILS",
-    #     "slots": {
-    #         "min_rating": "3.5"
-    #     },
-    #     "results": [
-    #         {"movieId": 11, "title": "Indie Gem A", "year": "2012", "avg_rating": "4.2", "num_ratings": "12", "genres": "Drama"},
-    #         {"movieId": 12, "title": "Indie Gem B", "year": "2011", "avg_rating": "4.1", "num_ratings": "8", "genres": "Drama"},
-    #         {"movieId": 13, "title": "Widely Rated Hit", "year": "2010", "avg_rating": "4.0", "num_ratings": "1200", "genres": "Drama"},
-    #         {"movieId": 14, "title": "Indie Gem C", "year": "2013", "avg_rating": "4.0", "num_ratings": "25", "genres": "Drama"},
-    #         {"movieId": 15, "title": "Popular Pick", "year": "2014", "avg_rating": "3.9", "num_ratings": "800", "genres": "Drama"}
-    #     ]
-    # }
+#     # # Build raw data where many items have very low ratings count
+#     # raw_data_sparse_quality = {
+#     #     "intent": "GET_DETAILS",
+#     #     "slots": {
+#     #         "min_rating": "3.5"
+#     #     },
+#     #     "results": [
+#     #         {"movieId": 11, "title": "Indie Gem A", "year": "2012", "avg_rating": "4.2", "num_ratings": "12", "genres": "Drama"},
+#     #         {"movieId": 12, "title": "Indie Gem B", "year": "2011", "avg_rating": "4.1", "num_ratings": "8", "genres": "Drama"},
+#     #         {"movieId": 13, "title": "Widely Rated Hit", "year": "2010", "avg_rating": "4.0", "num_ratings": "1200", "genres": "Drama"},
+#     #         {"movieId": 14, "title": "Indie Gem C", "year": "2013", "avg_rating": "4.0", "num_ratings": "25", "genres": "Drama"},
+#     #         {"movieId": 15, "title": "Popular Pick", "year": "2014", "avg_rating": "3.9", "num_ratings": "800", "genres": "Drama"}
+#     #     ]
+#     # }
 
-    # # Canonicalize the sparse-quality data
-    # normalised_sparse = normalise_query_output(raw_data_sparse_quality)
+#     # # Canonicalize the sparse-quality data
+#     # normalised_sparse = normalise_query_output(raw_data_sparse_quality)
 
-    # # Build compact context
-    # context_sparse = extract_compact_context(normalised_sparse, max_filters_length=140)
+#     # # Build compact context
+#     # context_sparse = extract_compact_context(normalised_sparse, max_filters_length=140)
 
-    # # Apply edge handling with min_count_threshold=50 to prefer widely-rated titles
-    # updated_normalised_sparse, updated_context_sparse = apply_edgecase_handling(
-    #     normalised_sparse,
-    #     context_sparse,
-    #     max_results=5,
-    #     min_count_threshold=50,
-    #     diversify=False  # diversification not needed here
-    # )
+#     # # Apply edge handling with min_count_threshold=50 to prefer widely-rated titles
+#     # updated_normalised_sparse, updated_context_sparse = apply_edgecase_handling(
+#     #     normalised_sparse,
+#     #     context_sparse,
+#     #     max_results=5,
+#     #     min_count_threshold=50,
+#     #     diversify=False  # diversification not needed here
+#     # )
 
-    # # Print results for scenario 3
-    # print("\n=== Scenario 3: Sparse quality → prefer widely-rated ===")
-    # print("\nUpdated Context:")
-    # print(json.dumps(updated_context_sparse, indent=4))
-    # print("\nUpdated Results (title → num_ratings):")
-    # print([f'{r["title"]} → {r.get("num_ratings")}' for r in normalised_sparse["results"]])
+#     # # Print results for scenario 3
+#     # print("\n=== Scenario 3: Sparse quality → prefer widely-rated ===")
+#     # print("\nUpdated Context:")
+#     # print(json.dumps(updated_context_sparse, indent=4))
+#     # print("\nUpdated Results (title → num_ratings):")
+#     # print([f'{r["title"]} → {r.get("num_ratings")}' for r in normalised_sparse["results"]])

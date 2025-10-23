@@ -405,3 +405,16 @@ class MovielensQueryProcessor:
             "intent": intent_value,
             "slots": slots_dict,
             "results": final_results}, raw_results
+
+
+# if __name__ == "__main__":
+#     import json
+#     from movie_reccommender_system.query_processor import rules_based_parser
+#     queryProcessor=MovielensQueryProcessor()
+
+#     text = {"text": "recommend action movies from 2020 with rating at least 4"}
+#     parsed = rules_based_parser.user_query_parser(text)
+#     logger.info(f"Parsed query -> intent: {parsed.intent}, slots: {parsed.dict()}")
+#     # trigger main dispatcher - movie_row variable if we want to check full results
+#     query_processor_output, _=queryProcessor.query_executor_output_handler(parsed, limit=10)
+#     print("query_processor_output: \n", json.dumps(query_processor_output, indent=4, ensure_enscii=False))
