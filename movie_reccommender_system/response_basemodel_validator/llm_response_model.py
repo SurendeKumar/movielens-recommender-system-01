@@ -9,7 +9,7 @@ class AnswerRequest(BaseModel):
     # excutor payload containing - {intent, slots, results}
     executor_payload: Optional[Dict[str, Any]] = Field(default=None)
     # maximum results to keep after edge handling
-    max_results: int = Field(default=5)
+    max_results: int = Field(default=50)
     # whether to diversify across genres when too many results
     diversify: bool = Field(default=True)
     # tone hint for the LLM output (e.g., concise, friendly)

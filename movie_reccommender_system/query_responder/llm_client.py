@@ -39,12 +39,12 @@ def generate_query_response(req: llm_response_model.AnswerRequest):
 
     logger.info(f"Normalising results..")
     normalised_data = normalise_query_output(req.executor_payload, max_results=max(5, req.max_results))
-    # Build context (Point 2)
+    # build context
     logger.info(f"Building the context..")
     context = extract_compact_context(normalised_data, max_filters_length=160)
-    # Add the titles list for convenience and potential future use
+    # add the titles list for convenience and potential future use
     context["titles"] = [r.get("title") for r in normalised_data.get("results", []) if r.get("title")]
-    # Apply edge handling (Point 5)
+    # apply edge handling
     normalised_data, context = apply_edgecase_handling(
         normalised_data,
         context,

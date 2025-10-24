@@ -13,6 +13,86 @@ logger=logging.getLogger("LLM_Conversational_Renderer")
 
 # render a conversational answer for any intent
 def render_conversational_answer(
+        intent: str,
+        context: Dict[str, Any],
+        results: List[Dict[str, Any]],
+        max_items: int = 5):
+    """Function to render a short, conversational answer for a given intent and results.
+    Supports: TOP_N, RECOMMEND_BY_FILTER, GET_DETAILS, SIMILAR_MOVIES.
+    Falls back gracefully if intent is unknown or results are empty.
+
+    Args:
+        intent (str): Incoming intent.
+        context (dict): Incoming context after context builder.
+        results (list): Results after normalization/edge handling.
+        max_items (int): Maximum items to include in the response (default: 5).
+
+    Returns:
+        str: Final conversational response.
+    """ 
+    
+    # normalize intent to uppercase
+    intent_key = (intent or "").upper()
+
+    # clip results to the requested maximum
+    rows = results[:max_items]
+
+    # build per-movie sentences (used by GET_DETAILS)
+    logger.info("Formatting the movie sentence.")
+    sentences = [format_movie_sentence(r) for r in rows]
+
+    # extract a human hint from context filters, if present
+    hint = context.get("filters_text")
+
+    # GET_DETAILS: usually a single item
+    if intent_key == "GET_DETAILS":
+        if rows:
+            # if we have a row, return a single clean sentence
+            return sentences[0]
+        # if no row is available, say we could not find details
+        return "I could not find details for that title."
+
+    # SIMILAR_MOVIES: mention seed and up to 3 recommendations
+    if intent_key == "SIMILAR_MOVIES":
+        seed = context.get("seed_title")
+        title_list = [r.get("title") for r in rows if r.get("title")]
+        logger.info("Joining the title list for similar movies..")
+        if title_list:
+            joined = natural_join(title_list[:3])  # keep short for this intent
+            if seed:
+                return f"If you liked {seed}, you might also enjoy {joined}."
+            return f"You might also enjoy {joined}."
+        return "I could not find similar movies to recommend."
+
+    # TOP_N / RECOMMEND_BY_FILTER: list ALL clipped rows (no ellipsis)
+    if intent_key in {"TOP_N", "RECOMMEND_BY_FILTER"}:
+        # no matches: suggest widening filters
+        if not rows:
+            return "I could not find any matches. Try lowering the rating or widening the year range."
+
+        # build highlights from ALL rows we decided to show (rows already clipped by max_items)
+        logger.info("Joining the formatted movie briefs for highlights..")
+        highlights = natural_join([format_movie_brief(r) for r in rows])
+
+        # include filters hint when available
+        if hint:
+            return f"I found {len(rows)} title(s) matching your filters ({hint}): {highlights}."
+        return f"I found {len(rows)} title(s): {highlights}."
+
+    # fallback: unknown intent but we have some rows
+    if rows:
+        logger.info("Joining the first two titles for fallback intent..")
+        first_two = natural_join([r.get("title") for r in rows[:2] if r.get("title")])
+        if hint:
+            return f"Here are the matches for your filters ({hint}): {first_two}."
+        return f"Here are the matches: {first_two}."
+
+    return "No matching movies found."
+
+
+
+############### old version ####################
+def render_conversational_answer_old_version(
         intent: str, 
         context: Dict[str, Any], 
         results: List[Dict[str, Any]], 

@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, HTTPException
 from router.data_ingestor_router import router as movielens_sqlite_data_ingestor
 from router.query_processor_router import router as movielens_query_processor
 from router.hf_llama_inference_router import router as movielens_query_responder
+from router.movie_recommender_sys_router import router as movielens_recommender_sys_responder
 
 # initiate the load_dotenv
 load_dotenv()
@@ -92,3 +93,4 @@ async def version():
 app.include_router(movielens_sqlite_data_ingestor, prefix="/api")
 app.include_router(movielens_query_processor, prefix="/api")
 app.include_router(movielens_query_responder, prefix="/api")
+app.include_router(movielens_recommender_sys_responder, prefix="/api")
