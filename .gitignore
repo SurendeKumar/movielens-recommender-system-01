@@ -12,3 +12,4 @@ movie_reccommender_system/data_ingestor/data_raw/
 
 # SQLite dbs
 *.db
+.pytest_cache

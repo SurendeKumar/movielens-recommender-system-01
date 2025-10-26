@@ -54,7 +54,7 @@ class MovieLensSqliteIngestor:
 
 
     # insertion step
-    def run_movielens_data_insertion(self) -> Dict:
+    def run_movielens_data_insertion(self):
         """Function to load u.item and u.data, then insert into SQLite.
 
         Returns: 
@@ -80,7 +80,7 @@ class MovieLensSqliteIngestor:
 
 
     # normalise genres
-    def run_genres_insertion(self) -> Dict:
+    def run_genres_insertion(self):
         """Function to build 'genres' and 'movie_genres' by reading genre flags from movies.
 
         Returns
@@ -100,7 +100,7 @@ class MovieLensSqliteIngestor:
 
 
     # collect movies and ratings stats
-    def run_movie_ratings_stats_insertion(self) -> Dict:
+    def run_movie_ratings_stats_insertion(self):
         """Function to compute avg_rating and num_ratings per movie, update the movies table.
 
         Returns:
@@ -119,7 +119,7 @@ class MovieLensSqliteIngestor:
 
 
     # run all steps in the correct order with simple checks
-    def run_data_ingestor(self) -> Dict:
+    def run_data_ingestor(self):
         """Function to wrap all ingestion services in order:
             1) insert movies and ratings
             2) build genres and movie_genres

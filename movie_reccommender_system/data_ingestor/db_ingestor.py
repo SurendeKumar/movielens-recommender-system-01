@@ -241,7 +241,7 @@ def create_movies_ratings_tbl(db_connection: sqlite3.Connection):
 
 
 # creating the genre table
-def create_genres_tbl(db_file_path: str) -> Dict:
+def create_genres_tbl(db_file_path: str):
     """Function to create and fill the 'genres' and 'movie_genres' tables.
 
     Args:
@@ -346,7 +346,7 @@ def create_genres_tbl(db_file_path: str) -> Dict:
 
 
 # update movie status
-def create_movie_rating_stats_tbl(db_file_path: str) -> Dict:
+def create_movie_rating_stats_tbl(db_file_path: str):
     """Function to add 'avg_rating' and 'num_ratings' to 'movies' and fill them from 'ratings'.
 
     Args
