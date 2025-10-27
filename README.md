@@ -83,7 +83,7 @@ movie-recommender-system-01/
 
 ## API Endpoints
 
-1.  **Data Ingestion**
+1.  **Movielens Respnder**
 ----------------------------
 
     *   API Endpoint: POST api/movielens/answer
