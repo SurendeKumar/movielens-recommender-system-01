@@ -67,11 +67,9 @@ movie-recommender-system-01/
 
 
 ├── router/                                             # FastAPI routers (API endpoints)
-    └── query_processor_router.py                       # (testing & exploration purposes) query processor controller 
-    └── hf_llama_inference_router.py                    # (testing & exploration purposes) llm inference controller
     └── movie_recommender_sys_router.py                 # Main router - Movielens Recommender Router (POST)
 ├── app.py                                              # FastAPI entrypoint
-├── movie_reccommender_client.py                        # CLI client to trigger the Recommender system
+├── movie_recommender_client.py                         # CLI client to trigger the Recommender system
 ├──.gitignore                                           # git system file
 ├── startup.ps1                                         # Startup script
 ├── .env                                                # Environment variables (DB path, LLM config, API keys)
@@ -188,8 +186,8 @@ Note: Copy startup.ps1 as shell script and paste it into startup.sh file.
 
 ### Data Ingestion
 - data_loader
-### db_ingestor
-### data_ingestor_main
+- db_ingestor
+- data_ingestor_main
 
 ### Query Processor
 - query_preprocessing
