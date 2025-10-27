@@ -16,7 +16,7 @@ The system combines structured data retrieval (SQLite) with natural language gen
 ---
 
 
-## Project Structure
+## API Structure
 
 ```
 movie-recommender-system-01/
@@ -121,7 +121,7 @@ Note: Once both workers are active, the client allows 5 interaction attempts. Af
 
 
 
-## Setup Instructions
+## API Setup Instructions
 
 ### 1. Clone the repository
 ```bash
@@ -161,7 +161,7 @@ pip install -e .[dev]
 - Place under the folder data_ingestor/data_raw/ -> this is how it should look like -> data_ingestor/data_raw/archive/ml-100k/**files
 
 
-### 5. Start the FastAPI application
+### 5. Start the FastAPI
 ```bash
 uvicorn app:app --reload
 ./startup.ps1 (Windows (PowerShell))
