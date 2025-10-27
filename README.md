@@ -29,12 +29,11 @@ movie-recommender-system-01/
             └── data_ingestor_main.py                   # driver class for movielens data ingestion 
     ├── db/
         └── movies.db                                   # SQLite database (generated after ingestion)
-        └── db_select.py                                # collecting stats for basic EDA.
+        └── db_select.py                                # collecting stats for basic EDA (Only for testing).
     ├── query_processor                                 # Query Processor module
         └── query_preprocessing.py                      # query preprocessor
         └── rule_based_parser.py                        # query rule based parser 
         └── query_processor_main                        # driver class for user's query processings
-
     ├── query_responder                                 # LLM Query Responder module
         └── llm_preprocessing.py                        # preprocessing before LLM inference
     └── llm_context_builder.py                          # context builder before LLM inference
@@ -42,13 +41,9 @@ movie-recommender-system-01/
         └── llm_conversational_renderer.py              # render conversational tasks before LLM inference
         └── llm_prompt_builder.py                       # LLM prompt builder
         └── llm_cient.py                                # LLM Client for conversation recommender system
-
     ├── response_basemodel_validator                    # pydantic basemodel validation module
-        └── data_ingestor_model.py                      # requet/response validation for data ingestor
         └── query_response_model.py                     # request/response validation for query processor
-        └──llm_response_model.py                        # erequest/respons validation for LLM client
-
-
+        └── llm_response_model.py                        # erequest/respons validation for LLM client
 ├── tests/                                              # Unittest 
     └── test_data_ingestion                             # TestSuite - data_ingestor module
         └── test_data_loader.py                         # data loader
@@ -64,8 +59,6 @@ movie-recommender-system-01/
         └── test_llm_conversational_renderer.py         # llm conversational renderer
         └── test_llm_prompt_builder.py                  # LLM prompt builder
         └── test_llm_client.py                          # LLM client for conversational inference
-
-
 ├── router/                                             # FastAPI routers (API endpoints)
     └── movie_recommender_sys_router.py                 # Main router - Movielens Recommender Router (POST)
 ├── app.py                                              # FastAPI entrypoint
