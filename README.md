@@ -16,7 +16,13 @@ The system combines structured data retrieval (SQLite) with natural language gen
 ---
 
 
-## API Structure
+## System Requirements
+- Kaggle account for downloading the Movielens ml-100k dataset.
+- Hugging Face Account for LLM - meta-llama/Llama-3.2-3B-Instruct access token
+---
+
+
+## Project Structure
 
 ```
 movie-recommender-system-01/
