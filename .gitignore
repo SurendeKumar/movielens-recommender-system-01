@@ -6,6 +6,12 @@ __pycache__/
 movie_reccommender_system.egg-info/
 # raw datasets and archives
 movie_reccommender_system/data_ingestor/data_raw/
+router/__pycache__/
+tests/__pycache__/
+movie_reccommender_system/query_processor/__pycache__/
+movie_reccommender_system/data_ingestor/__pycache__/
+movie_reccommender_system/query_responder/__pycache__/
+movie_reccommender_system/response_basemodel_validator/__pycache__/
 *.zip
 *.tar
 *.tar.gz
@@ -13,3 +19,4 @@ movie_reccommender_system/data_ingestor/data_raw/
 # SQLite dbs
 *.db
 .pytest_cache
+.venv
