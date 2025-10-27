@@ -89,7 +89,7 @@ movie-recommender-system-01/
     *   API Endpoint: POST api/movielens/answer
         
 
-3.  **How the system works?**
+2.  **How the system works?**
 
 - Worker 1 (Server Process): Start the FastAPI application using Uvicorn.
 ```bash
