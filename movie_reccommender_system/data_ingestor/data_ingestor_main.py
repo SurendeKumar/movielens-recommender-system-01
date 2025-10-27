@@ -34,7 +34,7 @@ class MovieLensSqliteIngestor:
       - get_db_stats(): quick sanity stats from DB (optional helper)
     """
 
-    # initiate the data, sb file paths
+    # initiate the data, db file paths
     def __init__(
             self, 
             data_folder_path: str, 

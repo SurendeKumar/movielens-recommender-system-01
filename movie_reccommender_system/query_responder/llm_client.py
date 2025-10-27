@@ -17,7 +17,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
 # deifne single logger for context builder
-logger=logging.getLogger("LLM_Edgecase_Handler")
+logger=logging.getLogger("LLM_Client_Responder")
 
 
 # create the main function that wires Points 1–5 + conversational rendering

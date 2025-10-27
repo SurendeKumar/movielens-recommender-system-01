@@ -68,7 +68,7 @@ def user_query_parser(text: str):
     year, year_from, year_to = get_years_from_text(text)
     
     logger.info(f"Collecting rating values from text.")
-    minimal_ratings, rating_compare = get_min_rating_from_text_v2(text)
+    minimal_ratings, rating_compare = get_min_rating_from_text(text)
     
     logger.info(f"Collecting generes from text.")
     genres = get_genres_from_text(text)
@@ -264,119 +264,8 @@ def get_years_from_text(text: str):
     return (single_year, year_from, year_to)
 
 
-# 2.1 find years - using regex 
-def get_years_from_text_using_regex(text: str):
-    """Function to extract year info from text.
-        - detects a single year (e.g., '2010')
-        - detects 'since 2015' (year_from)
-        - detects '2010-2015' or '2010 to 2015' (range)
-
-    Args: 
-        text (str): Incoming text from user's query.
-
-    Returns 
-        Tuple: (single_year, year_from, year_to).
-
-    """
-    # match four-digit years
-    years = [int(y) for y in re.findall(r"\b(19\d{2}|20\d{2})\b", text)]
-    # handle ranges like 2010-2015
-    match_found = re.search(r"\b(19\d{2}|20\d{2})\s*[-–]\s*(19\d{2}|20\d{2})\b", text)
-    if match_found:
-        y1, y2 = int(match_found.group(1)), int(match_found.group(2))
-        return (0, min(y1, y2), max(y1, y2))
-    
-    # handle 'since 2015'
-    match_found = re.search(r"\bsince\s+(19\d{2}|20\d{2})\b", text)
-    if match_found:
-        return (0, int(match_found.group(1)), 0)
-    
-    # handle single year if only one found
-    if len(years) == 1:
-        return (years[0], 0, 0)
-    # no year info - tuple containing as (single_year, year_from, year_to)
-    return (0, 0, 0)
-
-
-
 # 3. find minimal movie ratings
 def get_min_rating_from_text(text: str):
-    """Function to find a minimal rating threshold (1..5) in the text.
-    Supports patterns like:
-        - "rating 4"
-        - "rating at least 4"
-        - "rating greater than 3"
-        - "rating less than 3.5"
-        - "min 4" or "minimum 4"
-
-    Args:
-        text (str): Incoming text from user's query.
-    
-    Returns:
-        None if nothing found.
-
-    """
-    # make a lower-case copy
-    covnert_to_lowercase = query_preprocessing.covnert_text_to_lower_case(text)
-    # split into words
-    word_list = query_preprocessing.split_text_into_words_corpus(covnert_to_lowercase)
-
-    # loop over positions to look for 'rating'
-    for i in range(len(word_list) - 1):
-        # check for 'rating'
-        if word_list[i] == "rating":
-            # read the next token
-            next_word = word_list[i + 1]
-            # pattern 1. if the next token is 'at' we try to read two tokens ahead ("at least 4")
-            if next_word == "at" and i + 2 < len(word_list) and word_list[i + 2] == "least":
-                # try to parse the number at i+3
-                rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
-                # if parsed, clamp to 1..5 and return
-                if rating_value is not None:
-                    return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
-                
-            # pattern 2: "rating greater than 3"
-            if next_word == "greater" and i + 3 < len(word_list) and word_list[i + 2] == "than":
-                # try to parse the number at i+3
-                rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
-                # if parsed, clamp to 1..5 and return
-                if rating_value is not None:
-                    return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
-                
-            # pattern 3: "rating less than 3.5"
-            if next_word == "less" and i + 3 < len(word_list) and word_list[i + 2] == "than":
-                # try to parse the number at i+3
-                rating_value = query_preprocessing.parse_float_safe(word_list[i + 3])
-                # if parsed, clamp to 1..5 and return
-                if rating_value is not None:
-                    return (max(1.0, min(5.0, rating_value)), "less_than_or_equal")
-            
-            # pattern 4: "rating 4" 
-            rating_value = query_preprocessing.parse_float_safe(next_word)
-            if rating_value is not None:
-                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
-                
-            # otherwise if the next token is a number, parse it
-            rating_value = query_preprocessing.parse_float_safe(next_word)
-            # if we parsed a number, clamp and return
-            if rating_value is not None:
-                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
-
-    # loop again for 'min' or 'minimum'
-    for i in range(len(word_list) - 1):
-        # check for 'min' or 'minimum'
-        if word_list[i] in ("min", "minimum"):
-            # try to parse the next token as a number
-            rating_value = query_preprocessing.parse_float_safe(word_list[i + 1])
-            # if parsed, clamp and return
-            if rating_value is not None:
-                return (max(1.0, min(5.0, rating_value)), "greater_than_or_equal")
-
-    return (None, None)
-
-
-### Version 2
-def get_min_rating_from_text_v2(text: str):
     """Find a minimal rating threshold (1..5) from user text.
     Supports:
       - "rating 4"

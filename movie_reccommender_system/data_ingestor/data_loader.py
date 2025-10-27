@@ -1,4 +1,4 @@
-# movie_reccommender_system/data_ingestor/ingest_movielens.py
+"""Script to load the movielens data """
 import os
 import sqlite3
 import logging
@@ -139,7 +139,9 @@ def eda_movies(movies_df):
 
 
 # rating EDA
-def eda_ratings(ratings_df, movies_df):
+def eda_ratings(
+        ratings_df, 
+        movies_df):
     """Function to explore the simple EDA for u.data.
 
     Args:

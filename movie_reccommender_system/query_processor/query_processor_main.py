@@ -1,15 +1,11 @@
-"""Build and run SQL for parsed intents against the SQLite DB.
+"""Script to build and run SQL for parsed intents against the SQLite DB.
  
  Existing schema:
 - movies(title, release_date, avg_rating, num_ratings, ...)
 - genres(genre_id, genre_name)
 - movie_genres(movie_id, genre_id)
 - ratings(user_id, movie_id, rating, unix_time)
-
-We keep queries simple, parameterized, and fast with your indexes.
 """
-
-# import sqlite and typing
 import os
 import sqlite3
 import logging
