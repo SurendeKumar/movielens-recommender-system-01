@@ -9,7 +9,7 @@ The system combines structured data retrieval (SQLite) with natural language gen
 ## Features
 
 - Local **SQLite** database (movies, genres, ratings, cast, director, overview)  
-- Dataset ingestion from **MovieLens 100K** or **TMDB 5000**  
+- Dataset ingestion from **MovieLens 100K** - [Movielens Dataset Kaggle](https://www.kaggle.com/datasets/prajitdatta/movielens-100k-dataset/data)
 - REST API with **FastAPI** and auto-generated docs  
 - LLM (meta-llama/Llama-3.2-3B-Instruct) for conversational responses  
 

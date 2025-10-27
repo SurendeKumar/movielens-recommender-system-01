@@ -38,7 +38,7 @@ queryProcessor = MovielensQueryProcessor(db_file_path=DB_PATH)
 # llm clients
 # HUGGINGFACE_MODEL_ID="meta-llama/Llama-3.2-1B-Instruct"
 HUGGINGFACE_MODEL_ID_3B="meta-llama/Llama-3.2-3B-Instruct"
-HUGGINGFACE_HUB_TOKEN="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"
+HUGGINGFACE_HUB_TOKEN="hf_XXXXXX"
 
 
 # basemodel - to validate the request
