@@ -15,6 +15,7 @@ The system combines structured data retrieval (SQLite) with natural language gen
 
 ---
 
+
 ## Project Structure
 
 ```
@@ -66,7 +67,6 @@ movie-recommender-system-01/
 
 
 ├── router/                                             # FastAPI routers (API endpoints)
-    └── data_ingestor_router.py                         # (testing & exploration purposes) data ingestor controller
     └── query_processor_router.py                       # (testing & exploration purposes) query processor controller 
     └── hf_llama_inference_router.py                    # (testing & exploration purposes) llm inference controller
     └── movie_recommender_sys_router.py                 # Main router - Movielens Recommender Router (POST)
@@ -86,10 +86,28 @@ movie-recommender-system-01/
 1.  **Data Ingestion**
 ----------------------------
 
-    *   API Endpoint: POST api/movielens/recommender
+    *   API Endpoint: POST api/movielens/answer
         
+
+3.  **How the system works?**
+
+- Worker 1 (Server Process): Start the FastAPI application using Uvicorn.
+```bash
+uvicorn app:app --reload
+```
+
+- Worker 2 (Client Process): Run the MovieLens recommender system client.
+```bash
+python .\movie_recommmender_client.py
+```
+
+Below is screenshot how the system look like after running: 
+![alt text](image-1.png)
+
+Note: Once both workers are active, the client allows 5 interaction attempts. After these attempts are exhausted, the client process terminates automatically. The FastAPI server process continues to run independently.
         
-2.  **Sample payload:**
+
+3.  **Sample payload:**
     
     *   { "text": "recommend action movies from 1997" }
 
@@ -97,8 +115,17 @@ movie-recommender-system-01/
 
     *   {"text": "recommend action movies from 1997 with rating at least 3"}
 
-    *   {"text": "top 5 action since 1998"}
-        
+    *   {"text": "recommend me romantic comedies between 1997 and 1998 with at least 4 stars"}
+
+    *   {"text": "top 5 action movies since 1997"}
+
+    *   {"text": "can you find top 5 similar movies"}
+
+    *   {"text": "tell me about Godfather"}
+
+    *   {"text": "movies like Inception"}
+
+    *   {"text": "show me top 10 dramas before 1980"}
 ---
 
 
@@ -147,94 +174,35 @@ pip install -e .[dev]
 ```bash
 uvicorn app:app --reload
 ./startup.ps1 (Windows (PowerShell))
+sh.startup.sh (macOS) 
 ```
+
+Note: Copy startup.ps1 as shell script and paste it into startup.sh file.
 
 ---
 
 
 ## TestSuite Coverage Highlights
 
-## Data Ingestion
+- Detailed explanation about TestSuite can be found here: [unittest TestSuite](https://realpython.com/python-unittest/) 
 
-### data_loader
-- Raw files can be loaded into DataFrames.
-
+### Data Ingestion
+- data_loader
 ### db_ingestor
-- Insert movies + ratings into SQLite successfully.
-- Create normalized genre tables (`genres`, `movie_genres`).
-- Compute and update movie rating stats (`avg_rating`, `num_ratings`).
-
 ### data_ingestor_main
-- End-to-end workflow with `MovieLensSqliteIngestor`:
-  - Insert data.
-  - Normalize genres.
-  - Update rating stats.
-  - Orchestrate all steps together with success/failure handling.
 
+### Query Processor
+- query_preprocessing
+- rules_based_parser
+- query_processor_main
 
-## Query Processor
-
-### query_preprocessing
-- Convert user query text to lowercase and strip spaces.
-- Split queries into words.
-- Detect valid 4-digit years.
-- Parse float values safely from text.
-- Extract year values from date text (end of string, embedded, or none).
-
-### rules_based_parser
-- Detect "top N" (digits, words, default fallback).
-- Extract year values (single year, since, ranges with hyphen / to / between).
-- Extract minimum rating constraints with comparators (`≥` / `≤`).
-- Identify genres (single and multi-word forms).
-- Extract movie titles from quotes or phrases (`about`, `like`, `who directed/starred`).
-- Parse complete user queries into structured intents (`GET_DETAILS`, `SIMILAR_MOVIES`, `TOP_N`, `RECOMMEND_BY_FILTER`).
-
-### query_processor_main
-- Connect to SQLite database.
-- Convert SQL rows into normalized response models.
-- Run queries by intent:
-  - `GET_DETAILS` – title lookup.
-  - `RECOMMEND_BY_FILTER` – genres, year filters, ratings.
-  - `TOP_N` – delegate to recommend logic.
-  - `SIMILAR_MOVIES` – shared genres with a base title.
-- Dispatcher `query_executor` routes to correct query handler.
-- Output handler normalizes results into `{intent, slots, results}` with raw results list.
-
-
-## LLM Responder
-
-### llm_preprocessing
-- Validate executor payload shape (`intent`, `slots`, `results`).
-- Cast slot types (years → int, ratings → float).
-- Normalize result rows (ids, titles, years, ratings, genres).
-- De-duplicate by `movieId`.
-- Sort and cap results per intent.
-
-### llm_context_builder
-- Build compact `filters_text` (intent hint, genres, time window, rating bounds, seed title).
-- Derive `time_window` (`in`, `since`, `until`, `between`).
-- Derive `rating_bounds` (`=`, `≥`, `≤`, `between`).
-- Collect lightweight context: `result_count`, `seed_title`, `titles`.
-
-### llm_edgecase_handling
-- Detect flags: `no_results`, `overflow`, `sparse_quality`, `seed_missing`, `thin_metadata`, `ties_possible`.
-- Diversify on overflow (round-robin by primary genre) and cap.
-- Apply quality floor by `num_ratings` threshold.
-- Annotate context with `edge_notes`, `suggestions`, `sampled_from`.
-
-### llm_prompt_builder
-- Build deterministic LLM prompt (system guidance, context line, found count).
-- Compile fact lines (title, year, rating, count, genres) up to limit.
-- Support tone and item caps.
-
-### llm_conversational_renderer
-- Render human answer per intent: `TOP_N`, `RECOMMEND_BY_FILTER`, `GET_DETAILS`, `SIMILAR_MOVIES`.
-- Compact title briefs and full sentences.
-- Natural joins for short lists; robust fallbacks.
-
-### llm_client
-- End-to-end assembly: preprocessing → context → edge handling → prompt → conversational answer.
-- Deterministic, no external LLM dependency; timing metrics captured.
+### LLM Responder
+- llm_preprocessing
+- llm_context_builder
+- llm_edgecase_handling
+- llm_prompt_builder
+- llm_conversational_renderer
+- llm_client
 
 
 # TestSuite Execution
@@ -242,19 +210,9 @@ uvicorn app:app --reload
 ### Run as individual tests
 ```bash
 # Part 1 – Data Ingestion
-python tests/test_data_ingestion/test_data_loader.py
-python tests/test_data_ingestion/test_db_ingestor.py
-python tests/test_data_ingestion/test_data_ingestor_main.py
-
+python -m unittest discover -s .\tests\test_data_ingestion\ -v
 # Part 2 – Query Processor
-python tests/test_query_processor/test_query_preprocessing.py
-python tests/test_query_processor/test_rule_based_parser.py
-python tests/test_query_processor/test_query_processor_main.py
-
+python -m unittest discover -s .\tests/test_query_processor\ -v
 # Part 3 – LLM Responder
-python tests/test_query_responder/test_llm_preprocessing_and_context.py
-python tests/test_query_responder/test_llm_edgecase_handling.py
-python tests/test_query_responder/test_llm_prompt_builder.py
-python tests/test_query_responder/test_llm_conversational_renderer.py
-python tests/test_query_responder/test_llm_client.py
+python  -m unittest discover -s .\tests/test_query_responder\ -v
 ```
