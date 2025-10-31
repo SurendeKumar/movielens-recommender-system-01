@@ -8,8 +8,87 @@ logging.basicConfig(
 logger=logging.getLogger("LLM_Context_Builder")
 
 
-# build prompt
+# new version - build LLM prompt  -> build role-aware messages for chat models (system + user)
 def build_llm_prompt(
+        context,
+        results,
+        tone="formal",
+        max_items=10):
+    """Function to construct role-aware messages for chat LLMs.
+
+    Args:
+        context (dict): Output of extract_compact_context(), contains:
+                {result_count, seed_title, filters_text, time_window, rating_bounds}
+        results (list[dict]): Cleaned and sorted movie rows from normalise_query_output().
+        tone (str): Desired response style hint (e.g., "formal", "concise", "friendly").
+        max_items (int): Maximum number of facts included in the facts block.
+
+    Returns:
+        tuple(str, str): (system_instruction, user_message) ready for chat.completions.
+
+    Notes:
+        - system_instruction enforces tone, style, and dos/don'ts.
+        - user_message contains only compact context + facts + a precise task.
+        - This helps eliminate meta-openers like "Based on the information provided...".
+    """
+    # read the number of results from the context
+    result_count = context.get("result_count", 0)
+    # read the compact filters text for quick query summary
+    filters_text = context.get("filters_text")
+    # read the human-readable time window text
+    time_window_text = context.get("time_window")
+    # read the human-readable rating bounds text
+    rating_bounds_text = context.get("rating_bounds")
+
+    # SYSTEM: tone and guardrails->  keep the instruction short and prescriptive; ban meta-openers explicitly
+    system_instruction = (
+        "You are a helpful movie assistant.\n"
+        f"Write in a {tone} tone.\n"
+        "Be concise (1–3 sentences).\n"
+        "Start directly with the result (e.g., 'I found 5 titles …').\n"
+        "Do NOT use meta phrases like 'Based on the provided information' or 'Here is a summary'.\n"
+        "Use only the facts provided. Do not invent movies or data.\n"
+        "Prefer compact phrasing; use semicolons to list titles when helpful.\n"
+        "Format rating as '4.2★' and counts as short form (e.g., '12 ratings').\n")
+
+   
+    logger.info(f"Compiling fact blocks from result for chat messages context..")
+    fact_lines = make_facts_lines(results, max_items=max_items)
+
+    # list to collect the context hints - filter text, time window ratings
+    hint_parts = []
+    # check filter_text is not empty
+    if filters_text:
+        # append into hint_part list
+        hint_parts.append(filters_text)
+    else:
+        # if filters_text is not available, fall back to time_window and rating_bounds
+        # if a time window is defined (e.g., "since 2010")
+        if time_window_text:
+            # append into list
+            hint_parts.append(time_window_text)
+        # if rating bounds are defined (e.g., "rating above 4.0")
+        if rating_bounds_text:
+            # add it to hint_parts
+            hint_parts.append(rating_bounds_text)
+    # join all available hint parts
+    hint_text = "; ".join(hint_parts) if hint_parts else "no explicit filters"
+
+    # user message carries only what the model needs: context, facts, and a crisp task
+    user_message = (
+        f"Context: {hint_text}\n"
+        f"Found: {result_count} result(s).\n"
+        "Facts:\n" + ("\n".join(fact_lines) if fact_lines else "• No matching items.") + "\n\n"
+        "Task: In 1–3 formal sentences, start with 'I found …'. "
+        "Summarize the count and highlight 2–3 notable titles (highest rating or most ratings). "
+        "Avoid meta-openers like 'Based on the provided information'.")
+
+    # return role-separated content for chat.completions
+    return system_instruction, user_message
+
+
+# build prompt
+def build_llm_prompt_old_version(
         context, 
         results, 
         tone="concise", 
@@ -83,7 +162,6 @@ def build_llm_prompt(
 
     # return the final prompt text
     return prompt_text
-
 
 
 

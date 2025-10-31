@@ -38,7 +38,7 @@ queryProcessor = MovielensQueryProcessor(db_file_path=DB_PATH)
 # llm clients
 # HUGGINGFACE_MODEL_ID="meta-llama/Llama-3.2-1B-Instruct"
 HUGGINGFACE_MODEL_ID_3B="meta-llama/Llama-3.2-3B-Instruct"
-HUGGINGFACE_HUB_TOKEN="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+HUGGINGFACE_HUB_TOKEN="hf_xxxxxxxx"
 
 
 # basemodel - to validate the request
@@ -102,7 +102,10 @@ def api_movielen_recommender(req:MovieLensRecReq):
 
         logger.info(f"Starting to responder the user's query.")
         try:
-            output_response = llm_client.generate_query_response(requested_query)
+            output_response = llm_client.generate_query_response(
+                requested_query,
+                model_id=HUGGINGFACE_MODEL_ID_3B, 
+                hf_token=HUGGINGFACE_HUB_TOKEN)
         except Exception as llm_response_error:
             logger.exception("LLM client failed.")
             raise HTTPException(

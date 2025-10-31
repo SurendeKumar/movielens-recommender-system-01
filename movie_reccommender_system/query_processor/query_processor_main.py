@@ -11,8 +11,10 @@ import sqlite3
 import logging
 from pydantic import BaseModel
 from typing import List, Tuple, Dict
+from dotenv import load_dotenv
 from movie_reccommender_system.query_processor import query_preprocessing
 from movie_reccommender_system.response_basemodel_validator.query_processor_model import QueryParser, SingleRowMovieRecord
+load_dotenv()
 # define basic config
 logging.basicConfig(
     level=logging.INFO,  
@@ -406,11 +408,12 @@ class MovielensQueryProcessor:
 # if __name__ == "__main__":
 #     import json
 #     from movie_reccommender_system.query_processor import rules_based_parser
-#     queryProcessor=MovielensQueryProcessor()
+#     DB_FILE_PATH=os.getenv("DB_PATH")
+#     queryProcessor=MovielensQueryProcessor(DB_FILE_PATH)
 
-#     text = {"text": "recommend action movies from 2020 with rating at least 4"}
+#     text = "recommend action movies from 2020 with rating at least 4"
 #     parsed = rules_based_parser.user_query_parser(text)
 #     logger.info(f"Parsed query -> intent: {parsed.intent}, slots: {parsed.dict()}")
 #     # trigger main dispatcher - movie_row variable if we want to check full results
 #     query_processor_output, _=queryProcessor.query_executor_output_handler(parsed, limit=10)
-#     print("query_processor_output: \n", json.dumps(query_processor_output, indent=4, ensure_enscii=False))
+#     print("query_processor_output: \n", query_processor_output)

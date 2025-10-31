@@ -15,7 +15,7 @@ class AnswerRequest(BaseModel):
     # tone hint for the LLM output (e.g., concise, friendly)
     tone: str = Field(default="concise")
     # maximum number of tokens the LLM should generate
-    max_new_tokens: int = Field(default=120)
+    max_new_tokens: int = Field(default=350)
     # sampling temperature for generation
     temperature: float = Field(default=0.3)
     # Top-p nucleus sampling
